@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 20 tarefas | 3 concluídas | 17 pendentes
+**Status:** 20 tarefas | 4 concluídas | 16 pendentes
 
 ---
 
@@ -51,7 +51,7 @@
 **Pronto quando:** Projeto compila, conecta ao Supabase e Flyway valida que as migrations V1 e V2 estão aplicadas (baseline).
 
 #### Tarefa 04 — Entidades e Repositórios (JPA)
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/domain.md`, `_reversa_sdd/data-dictionary.md`
 **Constrói:** Classes `@Entity` Java e Repositórios Panache
 **Pronto quando:** Mapeamento objeto-relacional completo para todas as entidades financeiras.
