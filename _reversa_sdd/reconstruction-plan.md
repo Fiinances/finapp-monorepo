@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 6 concluídas | 16 pendentes
+**Status:** 22 tarefas | 8 concluídas | 14 pendentes
 
 ---
 
@@ -75,7 +75,7 @@
 **Pronto quando:** Algoritmos originais portados para Java/Postgres.
 
 #### Tarefa 08 — API: Installments & Subscriptions
-**Status:** pending
+**Status:** done
 **Lê:** `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
 **Constrói:** Endpoints de gestão de parcelas e recorrências
 **Pronto quando:** Funcionalidades de progresso e ativação/desativação disponíveis via REST.
