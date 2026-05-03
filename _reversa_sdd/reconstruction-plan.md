@@ -57,7 +57,7 @@
 **Pronto quando:** Mapeamento objeto-relacional completo para todas as entidades financeiras.
 
 #### Tarefa 05 — API: Transactions & Categories
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/categories.md`
 **Constrói:** `@Path("/transactions")`, `@Path("/categories")`
 **Pronto quando:** Endpoints de CRUD e listagem funcional.
