@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 20 tarefas | 4 concluídas | 16 pendentes
+**Status:** 22 tarefas | 6 concluídas | 16 pendentes
 
 ---
 
@@ -86,7 +86,13 @@
 **Constrói:** Endpoints de agregação
 **Pronto quando:** API retorna dados agregados para o Dashboard mobile.
 
-#### Tarefa 10 — Deploy Vercel (Quarkus)
+#### Tarefa 10 — Testes Automatizados: Backend
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/banks.md`, `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
+**Constrói:** Suite JUnit 5 com `@QuarkusTest` + REST-assured para todos os endpoints REST; `@TestSecurity` para simular usuários autenticados; cobertura de cenários de sucesso, 404 e validação (422)
+**Pronto quando:** Testes cobrem os endpoints de Transactions, Accounts, Cards, Categories, Installments e Subscriptions com no mínimo 80% de cobertura dos branches críticos; todos os testes passam em CI.
+
+#### Tarefa 11 — Deploy Vercel (Quarkus)
 **Status:** pending
 **Constrói:** `vercel.json`, build scripts
 **Pronto quando:** API acessível via URL de produção da Vercel.
@@ -95,41 +101,41 @@
 
 ### Fase 3: Frontend Mobile (React Native)
 
-#### Tarefa 11 — Setup React Native, UI Lib & Themes
+#### Tarefa 12 — Setup React Native, UI Lib & Themes
 **Status:** pending
 **Constrói:** Expo/CLI, **NativeWind**, **Gluestack UI**, Configuração de Temas Light/Dark
 **Pronto quando:** App inicia com suporte a temas e componentes básicos da UI Lib.
 
-#### Tarefa 12 — Integração Supabase Auth
+#### Tarefa 13 — Integração Supabase Auth
 **Status:** pending
 **Constrói:** Telas de Login/Cadastro, Auth Provider
 **Pronto quando:** Usuário consegue se logar e manter a sessão no app.
 
-#### Tarefa 13 — Componentes Core: Listagem de Transações
+#### Tarefa 14 — Componentes Core: Listagem de Transações
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/categories.md`
 **Constrói:** FlatList com NativeWind + Gluestack
 **Pronto quando:** Transações renderizadas com suporte a Dark Mode.
 
-#### Tarefa 14 — Tela: Dashboard (Gráficos Mobile)
+#### Tarefa 15 — Tela: Dashboard (Gráficos Mobile)
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/dashboard.md`
 **Constrói:** Integração com gráficos mobile
 **Pronto quando:** Gráficos adaptados para visualização mobile e temas.
 
-#### Tarefa 15 — Tela: Gestão de Bancos e Cartões
+#### Tarefa 16 — Tela: Gestão de Bancos e Cartões
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/banks.md`
 **Constrói:** CRUD Mobile (Forms com validação)
 **Pronto quando:** Usuário gerencia contas e cartões pelo app.
 
-#### Tarefa 16 — Tela: Gestão de Parcelamentos e Assinaturas
+#### Tarefa 17 — Tela: Gestão de Parcelamentos e Assinaturas
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
 **Constrói:** Telas de detalhe e detecção automática
 **Pronto quando:** Fluxos de detecção portados para a UI mobile.
 
-#### Tarefa 17 — Fluxo de Importação (Mobile)
+#### Tarefa 18 — Fluxo de Importação (Mobile)
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/import.md`
 **Constrói:** Upload de arquivos + Preview de importação
@@ -137,20 +143,27 @@
 
 ---
 
-### Fase 4: Validação E2E
+### Fase 4: Testes e Validação E2E
 
-#### Tarefa 18 — User Stories: Fluxo Financeiro Completo
+#### Tarefa 19 — Testes Automatizados: Frontend
+**Status:** pending
+**Lê:** `_reversa_sdd/user-stories/`
+**Constrói:** Testes unitários com Jest + React Native Testing Library (RNTL) para componentes core; hooks de API mockados com Jest; cobertura de estados de loading, erro e sucesso; testes de snapshot para componentes visuais
+**Pronto quando:** Componentes de Listagem de Transações, Dashboard e Auth cobertos por testes unitários; snapshots aprovados; todos os testes passam em CI.
+
+#### Tarefa 20 — Validação E2E (Maestro)
 **Status:** pending
 **Lê:** Todas as User Stories em `_reversa_sdd/user-stories/`
-**Pronto quando:** Critérios de aceitação validados no dispositivo mobile.
+**Constrói:** Fluxos Maestro (`.yaml`) cobrindo os cenários críticos de cada User Story — login, importação, categorização, dashboard
+**Pronto quando:** Fluxos E2E executados com sucesso no emulador (iOS e Android) sem erros; todos os critérios de aceitação das User Stories validados.
 
-#### Tarefa 19 — Integração LLM (Groq)
+#### Tarefa 21 — Integração LLM (Groq)
 **Status:** pending
 **Lê:** `_reversa_sdd/sdd/ipc-llm.md`
 **Constrói:** Chamada do Quarkus para a Groq API
 **Pronto quando:** Auto-categorização funcional via backend.
 
-#### Tarefa 20 — Polimento de UI/UX (Poppins & Themes)
+#### Tarefa 22 — Polimento de UI/UX (Poppins & Themes)
 **Status:** pending
 **Lê:** `_reversa_sdd/design-system/`
 **Constrói:** Ajustes finais de design, fonte Poppins e contraste nos temas
