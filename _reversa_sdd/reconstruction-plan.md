@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 9 concluídas | 13 pendentes
+**Status:** 22 tarefas | 10 concluídas | 12 pendentes
 
 ---
 
@@ -87,7 +87,7 @@
 **Pronto quando:** API retorna dados agregados para o Dashboard mobile.
 
 #### Tarefa 10 — Testes Automatizados: Backend
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/banks.md`, `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
 **Constrói:** Suite JUnit 5 com `@QuarkusTest` + REST-assured para todos os endpoints REST; `@TestSecurity` para simular usuários autenticados; cobertura de cenários de sucesso, 404 e validação (422)
 **Pronto quando:** Testes cobrem os endpoints de Transactions, Accounts, Cards, Categories, Installments e Subscriptions com no mínimo 80% de cobertura dos branches críticos; todos os testes passam em CI.
