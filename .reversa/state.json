@@ -1,0 +1,120 @@
+{
+  "version": "1.2.14",
+  "project": "electron-next-app",
+  "user_name": "lessa",
+  "chat_language": "pt-br",
+  "doc_language": "Português",
+  "answer_mode": "chat",
+  "doc_level": "detalhado",
+  "output_folder": "_reversa_sdd",
+  "phase": "concluido",
+  "completed": ["reconhecimento", "escavacao", "interpretacao", "geracao", "revisao"],
+  "pending": [],
+  "checkpoints": {
+    "reconhecimento": {
+      "completed_at": "2026-05-02T15:48:00Z",
+      "agent": "reversa-scout",
+      "artifacts": ["_reversa_sdd/inventory.md", "_reversa_sdd/dependencies.md", ".reversa/context/surface.json"],
+      "modules_found": ["transactions", "dashboard", "banks", "installments", "subscriptions", "categories", "electron-main", "ipc-db", "ipc-llm", "llm", "import"]
+    },
+    "escavacao": {
+      "completed_at": "2026-05-02T16:00:00Z",
+      "agent": "reversa-archaeologist",
+      "artifacts": [
+        "_reversa_sdd/code-analysis.md",
+        "_reversa_sdd/data-dictionary.md",
+        "_reversa_sdd/flowcharts/import.md",
+        "_reversa_sdd/flowcharts/ipc-db.md",
+        "_reversa_sdd/flowcharts/transactions.md",
+        "_reversa_sdd/flowcharts/ipc-llm.md",
+        ".reversa/context/modules.json"
+      ],
+      "modules_analyzed": 11,
+      "entities_found": 7,
+      "business_rules": 18,
+      "lacunas": 8
+    },
+    "interpretacao": {
+      "completed_at": "2026-05-02T17:00:00Z",
+      "agent": "reversa-detective + reversa-architect",
+      "artifacts": [
+        "_reversa_sdd/business-rules.md",
+        "_reversa_sdd/state-machines.md",
+        "_reversa_sdd/adrs.md",
+        "_reversa_sdd/architecture.md"
+      ]
+    },
+    "geracao": {
+      "completed_at": "2026-05-02T18:10:00Z",
+      "agent": "reversa-writer",
+      "artifacts": [
+        "_reversa_sdd/sdd/ipc-db.md",
+        "_reversa_sdd/sdd/transactions.md",
+        "_reversa_sdd/sdd/import.md",
+        "_reversa_sdd/sdd/ipc-llm.md",
+        "_reversa_sdd/sdd/electron-main.md",
+        "_reversa_sdd/sdd/dashboard.md",
+        "_reversa_sdd/sdd/banks.md",
+        "_reversa_sdd/sdd/installments.md",
+        "_reversa_sdd/sdd/subscriptions.md",
+        "_reversa_sdd/sdd/categories.md",
+        "_reversa_sdd/user-stories/importar-extrato.md",
+        "_reversa_sdd/user-stories/categorizar-transacoes.md",
+        "_reversa_sdd/user-stories/gerenciar-parcelamentos.md",
+        "_reversa_sdd/user-stories/gerenciar-assinaturas.md",
+        "_reversa_sdd/user-stories/visualizar-dashboard.md",
+        "_reversa_sdd/traceability/code-spec-matrix.md"
+      ],
+      "sdds_generated": 10,
+      "user_stories_generated": 15,
+      "lacunas_confirmed": 15
+    },
+    "revisao": {
+      "completed_at": "2026-05-02T18:45:00Z",
+      "agent": "reversa-reviewer",
+      "artifacts": ["_reversa_sdd/confidence-report.md", "_reversa_sdd/gaps.md", "_reversa_sdd/questions.md"],
+      "confidence_score": "90.2%",
+      "questions_answered": 8
+    }
+  },
+  "engines": [
+    "antigravity",
+    "github-copilot"
+  ],
+  "agents": [
+    "reversa",
+    "reversa-scout",
+    "reversa-archaeologist",
+    "reversa-detective",
+    "reversa-architect",
+    "reversa-writer",
+    "reversa-reviewer",
+    "reversa-visor",
+    "reversa-data-master",
+    "reversa-design-system",
+    "reversa-agents-help",
+    "reversa-reconstructor"
+  ],
+  "created_files": [
+    ".agents\\skills\\reversa",
+    ".agents\\skills\\reversa-scout",
+    ".agents\\skills\\reversa-archaeologist",
+    ".agents\\skills\\reversa-detective",
+    ".agents\\skills\\reversa-architect",
+    ".agents\\skills\\reversa-writer",
+    ".agents\\skills\\reversa-reviewer",
+    ".agents\\skills\\reversa-visor",
+    ".agents\\skills\\reversa-data-master",
+    ".agents\\skills\\reversa-design-system",
+    ".agents\\skills\\reversa-agents-help",
+    ".agents\\skills\\reversa-reconstructor",
+    "AGENTS.md",
+    ".github\\copilot-instructions.md",
+    ".reversa\\state.json",
+    ".reversa\\config.toml",
+    ".reversa\\config.user.toml",
+    ".reversa\\plan.md",
+    ".reversa\\version",
+    ".reversa\\_config\\manifest.yaml"
+  ]
+}

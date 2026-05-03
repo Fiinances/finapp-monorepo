@@ -1,0 +1,16 @@
+# Arquivos de configuração com secrets — NUNCA commitar
+src/main/resources/application.properties
+
+# Build outputs
+target/
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-05-02T15:47:00Z",
+  "project_root": "c:/Users/victo/electron-next-app",
+  "project_name": "electron-next-app",
+  "product_name": "Finapp",
+  "version": "0.5.10",
+  "languages": [
+    { "name": "TypeScript", "extensions": [".ts", ".tsx"], "file_count": 62 },
+    { "name": "JavaScript", "extensions": [".js", ".mjs"], "file_count": 22 }
+  ],
+  "primary_language": "TypeScript",
+  "frameworks": [
+    { "name": "Next.js", "version": "14.2.0", "source": "package.json" },
+    { "name": "Electron", "version": "34.0.0", "source": "package.json" },
+    { "name": "React", "version": "18.2.0", "source": "package.json" },
+    { "name": "Tailwind CSS", "version": "4.2.1", "source": "package.json" },
+    { "name": "Redux Toolkit", "version": "2.11.2", "source": "package.json" },
+    { "name": "Knex.js", "version": "3.1.0", "source": "package.json" },
+    { "name": "Shadcn/UI", "version": "3.8.5", "source": "package.json" }
+  ],
+  "package_manager": "npm",
+  "entry_points": [
+    { "path": "electron/main.js", "type": "electron_main" },
+    { "path": "electron/preload.js", "type": "electron_preload" },
+    { "path": "app/layout.tsx", "type": "nextjs_root_layout" },
+    { "path": "app/page.tsx", "type": "nextjs_page" }
+  ],
+  "config_files": [
+    "next.config.js",
+    "knexfile.js",
+    "tsconfig.json",
+    "postcss.config.mjs",
+    "components.json",
+    ".env"
+  ],
+  "ci_cd": [
+    ".github/workflows/bump-version.yml",
+    ".github/workflows/release.yml"
+  ],
+  "docker": null,
+  "database_hints": [
+    { "path": "electron/database.js", "type": "sqlite_init" },
+    { "path": "electron/db-handlers.js", "type": "ipc_handlers" },
+    { "path": "electron/migrations/", "type": "knex_migrations_dir", "count": 13 },
+    { "path": "knexfile.js", "type": "knex_config" }
+  ],
+  "database_engine": "SQLite (better-sqlite3)",
+  "test_framework": null,
+  "test_file_count": 0,
+  "modules": [
+    "transactions",
+    "dashboard",
+    "banks",
+    "installments",
+    "subscriptions",
+    "categories",
+    "electron-main",
+    "ipc-db",
+    "ipc-llm",
+    "llm",
+    "import"
+  ],
+  "external_integrations": [
+    { "name": "Groq API", "library": "groq-sdk", "purpose": "LLM via nuvem" },
+    { "name": "WebLLM", "library": "@mlc-ai/web-llm", "purpose": "LLM local offline" },
+    { "name": "MediaPipe GenAI", "library": "@mediapipe/tasks-genai", "purpose": "LLM local (alternativa)" },
+    { "name": "GitHub Releases", "library": "electron-updater", "purpose": "Auto-atualização" },
+    { "name": "OFX Import", "library": "ofx-js", "purpose": "Importação de extratos bancários" },
+    { "name": "CSV Import", "library": "papaparse", "purpose": "Importação de extratos CSV" }
+  ],
+  "build_targets": ["win32-x64", "darwin-x64", "darwin-arm64", "linux-x64"],
+  "distribution": {
+    "provider": "github",
+    "owner": "Fiinances",
+    "repo": "finapp_releases"
+  },
+  "total_files": 84
+}

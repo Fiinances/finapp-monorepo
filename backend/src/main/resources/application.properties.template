@@ -1,0 +1,86 @@
+# =============================================================
+# FINAPP BACKEND — Configuração Quarkus
+# Copie este arquivo para application.properties e preencha
+# os valores marcados com <SUBSTITUIR>
+# =============================================================
+
+# -------------------------------------------------------------
+# Servidor
+# -------------------------------------------------------------
+quarkus.http.port=8080
+quarkus.http.cors=true
+quarkus.http.cors.origins=*
+quarkus.http.cors.methods=GET,POST,PUT,PATCH,DELETE,OPTIONS
+quarkus.http.cors.headers=Authorization,Content-Type,Accept
+
+# -------------------------------------------------------------
+# Banco de dados — Supabase (PostgreSQL)
+# Connection String disponível em: Project Settings > Database
+# Use a "Connection pooling" string com mode=transaction
+# -------------------------------------------------------------
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=postgres
+quarkus.datasource.password=<SUBSTITUIR: sua senha do Supabase>
+quarkus.datasource.jdbc.url=jdbc:postgresql://db.<SUBSTITUIR: project-ref>.supabase.co:5432/postgres?sslmode=require
+
+# Pool de conexões
+quarkus.datasource.jdbc.min-size=2
+quarkus.datasource.jdbc.max-size=10
+
+# -------------------------------------------------------------
+# Flyway — Versionamento de Migrations
+# IMPORTANTE: baseline-on-migrate=true pois V1 e V2 já foram
+# aplicadas manualmente no Supabase durante a inicialização.
+# O Flyway marcará essas versões como "aplicadas" sem re-executar.
+# -------------------------------------------------------------
+quarkus.flyway.migrate-at-start=true
+quarkus.flyway.baseline-on-migrate=true
+quarkus.flyway.baseline-version=2
+quarkus.flyway.locations=db/migration
+quarkus.flyway.out-of-order=false
+
+# -------------------------------------------------------------
+# Hibernate ORM
+# ATENÇÃO: em produção NUNCA use create/drop. Use validate.
+# -------------------------------------------------------------
+quarkus.hibernate-orm.database.generation=validate
+quarkus.hibernate-orm.log.sql=false
+quarkus.hibernate-orm.sql-load-script=no-file
+
+# -------------------------------------------------------------
+# JWT — Supabase Auth (RS256)
+# Chave pública disponível em: Project Settings > API > JWT Secret
+# Formato: JWKS ou PEM público do Supabase
+# -------------------------------------------------------------
+mp.jwt.verify.issuer=https://<SUBSTITUIR: project-ref>.supabase.co/auth/v1
+mp.jwt.verify.publickey.location=https://<SUBSTITUIR: project-ref>.supabase.co/auth/v1/jwks
+mp.jwt.verify.audiences=authenticated
+
+# -------------------------------------------------------------
+# OpenAPI / Swagger UI
+# -------------------------------------------------------------
+quarkus.swagger-ui.always-include=true
+quarkus.swagger-ui.path=/swagger
+quarkus.smallrye-openapi.path=/openapi
+mp.openapi.extensions.smallrye.info.title=Finapp API
+mp.openapi.extensions.smallrye.info.version=1.0.0
+mp.openapi.extensions.smallrye.info.description=API REST do Finapp — Controle Financeiro Pessoal
+
+# -------------------------------------------------------------
+# Health Check
+# -------------------------------------------------------------
+quarkus.smallrye-health.ui.always-include=true
+
+# =============================================================
+# PERFIL: dev (ambiente local)
+# =============================================================
+%dev.quarkus.hibernate-orm.log.sql=true
+%dev.quarkus.swagger-ui.always-include=true
+%dev.quarkus.flyway.baseline-on-migrate=true
+
+# =============================================================
+# PERFIL: test
+# =============================================================
+%test.quarkus.datasource.db-kind=postgresql
+%test.quarkus.flyway.migrate-at-start=true
+%test.quarkus.hibernate-orm.database.generation=drop-and-create

@@ -1,0 +1,248 @@
+{
+  "generated_at": "2026-05-02T15:58:00Z",
+  "modules": [
+    {
+      "name": "transactions",
+      "path": "lib/transactions.ts",
+      "purpose": "Utilitários de parsing de datas, formatação e agrupamento mensal de transações financeiras",
+      "primary_files": ["lib/transactions.ts", "app/types/electron.d.ts"],
+      "functions": [
+        { "name": "parseMaskedAmount", "file": "lib/transactions.ts", "params": ["input: string"], "returns": "number", "confidence": "confirmed" },
+        { "name": "formatDate", "file": "lib/transactions.ts", "params": ["date: string"], "returns": "string", "confidence": "confirmed" },
+        { "name": "parseDateToISO", "file": "lib/transactions.ts", "params": ["date: string"], "returns": "string", "confidence": "confirmed" },
+        { "name": "parseYearMonth", "file": "lib/transactions.ts", "params": ["date: string"], "returns": "string", "confidence": "confirmed" },
+        { "name": "buildSummaries", "file": "lib/transactions.ts", "params": ["transactions: Transaction[]"], "returns": "MonthSummary[]", "confidence": "confirmed" },
+        { "name": "txBillingMonth", "file": "lib/transactions.ts", "params": ["t: Transaction"], "returns": "string", "confidence": "confirmed" }
+      ],
+      "entities": [
+        {
+          "name": "Transaction",
+          "fields": [
+            { "name": "id", "type": "number?", "required": false },
+            { "name": "account_id", "type": "number | null", "required": false },
+            { "name": "credit_card_id", "type": "number | null", "required": false },
+            { "name": "date", "type": "string", "required": true },
+            { "name": "description", "type": "string", "required": true },
+            { "name": "amount", "type": "number", "required": true },
+            { "name": "type", "type": "income|expense|investment|transfer|card_payment", "required": true },
+            { "name": "category", "type": "string?", "required": false },
+            { "name": "source", "type": "manual|csv|ofx", "required": false },
+            { "name": "external_id", "type": "string?", "required": false },
+            { "name": "category_id", "type": "number | null", "required": false },
+            { "name": "billing_month", "type": "string | null", "required": false },
+            { "name": "installment_group_id", "type": "number | null", "required": false },
+            { "name": "installment_number", "type": "number | null", "required": false }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "MonthSummary",
+          "fields": [
+            { "name": "monthYear", "type": "string", "required": true },
+            { "name": "label", "type": "string", "required": true },
+            { "name": "count", "type": "number", "required": true },
+            { "name": "income", "type": "number", "required": true },
+            { "name": "expense", "type": "number", "required": true },
+            { "name": "investment", "type": "number", "required": true },
+            { "name": "total", "type": "number", "required": true },
+            { "name": "transactions", "type": "Transaction[]", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        { "description": "amount é sempre positivo — tipo determina entrada/saída", "location": "lib/transactions.ts", "confidence": "confirmed" },
+        { "description": "total = income - expense (investimentos excluídos do total)", "location": "lib/transactions.ts:70", "confidence": "confirmed" },
+        { "description": "Ordenação por mês usa localeCompare em MM/YYYY — potencial bug cross-year", "location": "lib/transactions.ts:72", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db"],
+      "algorithms": ["buildSummaries: Map-based grouping por mês de cobrança"],
+      "complexity": "medium"
+    },
+    {
+      "name": "ipc-db",
+      "path": "electron/db-handlers.js",
+      "purpose": "Camada de dados — registra handlers IPC para todas as operações CRUD no SQLite",
+      "primary_files": ["electron/db-handlers.js", "electron/database.js"],
+      "functions": [
+        { "name": "registerDbHandlers", "file": "electron/db-handlers.js", "params": [], "returns": "void", "confidence": "confirmed" },
+        { "name": "getKnex", "file": "electron/database.js", "params": [], "returns": "Knex", "confidence": "confirmed" },
+        { "name": "migrate", "file": "electron/database.js", "params": [], "returns": "Promise<void>", "confidence": "confirmed" }
+      ],
+      "entities": [
+        { "name": "Account", "fields": [{ "name": "id" }, { "name": "name" }, { "name": "bank" }, { "name": "balance" }, { "name": "color" }], "confidence": "confirmed" },
+        { "name": "CreditCard", "fields": [{ "name": "id" }, { "name": "account_id" }, { "name": "name" }, { "name": "credit_limit" }, { "name": "closing_day" }, { "name": "due_day" }], "confidence": "confirmed" },
+        { "name": "InstallmentGroup", "fields": [{ "name": "id" }, { "name": "credit_card_id" }, { "name": "description" }, { "name": "total_amount" }, { "name": "installments" }, { "name": "first_billing_month" }], "confidence": "confirmed" },
+        { "name": "Subscription", "fields": [{ "name": "id" }, { "name": "name" }, { "name": "amount" }, { "name": "type" }, { "name": "period" }, { "name": "active" }], "confidence": "confirmed" },
+        { "name": "Category", "fields": [{ "name": "id" }, { "name": "name" }, { "name": "color" }, { "name": "icon" }, { "name": "type" }, { "name": "parent_id" }], "confidence": "confirmed" }
+      ],
+      "business_rules": [
+        { "description": "Deduplicação de transações por external_id na inserção", "location": "electron/db-handlers.js:22-32", "confidence": "confirmed" },
+        { "description": "Progresso de parcelamento calculado temporalmente (não por pagamentos reais)", "location": "electron/db-handlers.js:188-219", "confidence": "confirmed" },
+        { "description": "Detecção de assinaturas: >= 3 ocorrências com variação < 5%", "location": "electron/db-handlers.js:162-165", "confidence": "confirmed" },
+        { "description": "Delete de installment_group unlinks transações (não cascateia)", "location": "electron/db-handlers.js:235-237", "confidence": "confirmed" },
+        { "description": "Suporte a dois formatos de data legados no deleteByMonth", "location": "electron/db-handlers.js:46-52", "confidence": "confirmed" }
+      ],
+      "dependencies": [],
+      "algorithms": [
+        "Deduplicação batch por external_id",
+        "Cálculo temporal de parcelas pagas (monthsBetween)",
+        "Detecção de recorrência via SQL GROUP BY + HAVING",
+        "Detecção de padrão de parcelamento via regex em description"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "ipc-llm",
+      "path": "electron/llm-handlers.js",
+      "purpose": "Integração com LLM para categorização automática de transações (Groq API + MediaPipe local)",
+      "primary_files": ["electron/llm-handlers.js", "lib/llm-client.ts", "lib/llm-worker.ts"],
+      "functions": [
+        { "name": "categorizeTransactions", "file": "electron/llm-handlers.js", "params": ["_, transactions"], "returns": "Promise<string[]>", "confidence": "confirmed" },
+        { "name": "initLLM", "file": "lib/llm-client.ts", "params": ["modelBuffer: ReadableStream<Uint8Array>"], "returns": "Promise<void>", "confidence": "confirmed" },
+        { "name": "generate", "file": "lib/llm-client.ts", "params": ["prompt: string"], "returns": "Promise<string>", "confidence": "confirmed" },
+        { "name": "isLLMReady", "file": "lib/llm-client.ts", "params": [], "returns": "boolean", "confidence": "confirmed" }
+      ],
+      "entities": [],
+      "business_rules": [
+        { "description": "Groq categoriza apenas via processo principal (IPC), não direto do renderer", "location": "electron/llm-handlers.js:41-43", "confidence": "confirmed" },
+        { "description": "LLM local usa Web Worker isolado para não bloquear UI", "location": "lib/llm-client.ts:12-44", "confidence": "confirmed" },
+        { "description": "modelo Groq: openai/gpt-oss-120b — pode ser alias ou erro", "location": "electron/llm-handlers.js:31", "confidence": "unknown" },
+        { "description": "Parsing do JSON de categorias é frágil (substring entre [ e ])", "location": "electron/llm-handlers.js:36-38", "confidence": "confirmed" }
+      ],
+      "dependencies": [],
+      "algorithms": ["Promise-based message queue para Web Worker (id counter + Map de pending calls)"],
+      "complexity": "high"
+    },
+    {
+      "name": "import",
+      "path": "components/import-dropdown.tsx",
+      "purpose": "Importação de extratos bancários OFX e CSV com preview, edição e auto-categorização",
+      "primary_files": ["components/import-dropdown.tsx"],
+      "functions": [
+        { "name": "mapCsvToTransactions", "file": "components/import-dropdown.tsx", "params": ["rows: Record<string,unknown>[]"], "returns": "Transaction[]", "confidence": "confirmed" },
+        { "name": "mapOfxToTransactions", "file": "components/import-dropdown.tsx", "params": ["data: Record<string,unknown>"], "returns": "Transaction[]", "confidence": "confirmed" },
+        { "name": "detectInstallment", "file": "components/import-dropdown.tsx", "params": ["desc: string"], "returns": "{current,total}|null", "confidence": "confirmed" },
+        { "name": "inferBillingMonth", "file": "components/import-dropdown.tsx", "params": ["txns, closingDay, fallback"], "returns": "string", "confidence": "confirmed" },
+        { "name": "normalizeDateToISO", "file": "components/import-dropdown.tsx", "params": ["raw: string"], "returns": "string", "confidence": "confirmed" }
+      ],
+      "entities": [],
+      "business_rules": [
+        { "description": "Importação é 2 etapas: upload/parse → preview/confirmação", "location": "components/import-dropdown.tsx:31-32", "confidence": "confirmed" },
+        { "description": "Mapeamento de colunas CSV por substring fuzzy", "location": "components/import-dropdown.tsx:33-37", "confidence": "confirmed" },
+        { "description": "billing_month inferido pelo closing_day do cartão (votação)", "location": "components/import-dropdown.tsx:206-227", "confidence": "confirmed" },
+        { "description": "OFX suporta extratos bancários (BANKMSGSRSV1) e cartão (CREDITCARDMSGSRSV1)", "location": "components/import-dropdown.tsx:112-117", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db", "ipc-llm", "transactions"],
+      "algorithms": ["Fuzzy column detection", "Majority-vote billing month inference", "Installment pattern regex"],
+      "complexity": "high"
+    },
+    {
+      "name": "electron-main",
+      "path": "electron/main.js",
+      "purpose": "Processo principal Electron: criação de janela, WebGPU flags, auto-updater, IPC de controle de janela",
+      "primary_files": ["electron/main.js", "electron/preload.js"],
+      "functions": [
+        { "name": "createWindow", "file": "electron/main.js", "params": [], "returns": "Promise<BrowserWindow>", "confidence": "confirmed" },
+        { "name": "setupAutoUpdater", "file": "electron/main.js", "params": ["mainWindow: BrowserWindow"], "returns": "void", "confidence": "confirmed" }
+      ],
+      "entities": [],
+      "business_rules": [
+        { "description": "Dev: carrega http://localhost:3000; Prod: electron-serve da pasta out/", "location": "electron/main.js:47-52", "confidence": "confirmed" },
+        { "description": "Auto-update só ativa em produção (app.isPackaged)", "location": "electron/main.js:67", "confidence": "confirmed" },
+        { "description": "sandbox:false necessário para WebGPU no worker", "location": "electron/main.js:40", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db", "ipc-llm"],
+      "algorithms": [],
+      "complexity": "medium"
+    },
+    {
+      "name": "dashboard",
+      "path": "app/dashboard",
+      "purpose": "Visualização de métricas financeiras por meio de gráficos: receitas/despesas mensais, categorias, faturas e assinaturas",
+      "primary_files": ["app/dashboard/page.tsx", "app/dashboard/components/MonthlyIncomeExpenseChart.tsx", "app/dashboard/components/CategoryExpenseChart.tsx", "app/dashboard/components/CreditCardFaturaChart.tsx", "app/dashboard/components/AccountSubscriptionsCalendar.tsx"],
+      "functions": [],
+      "entities": [],
+      "business_rules": [],
+      "dependencies": ["ipc-db"],
+      "algorithms": [],
+      "complexity": "medium"
+    },
+    {
+      "name": "banks",
+      "path": "app/banks",
+      "purpose": "Gestão de contas bancárias e cartões de crédito (CRUD, navegação para detalhes)",
+      "primary_files": ["app/banks/page.tsx"],
+      "functions": [],
+      "entities": ["Account", "CreditCard"],
+      "business_rules": [
+        { "description": "balance de conta não é calculado automaticamente", "location": "app/banks/page.tsx", "confidence": "inferred" }
+      ],
+      "dependencies": ["ipc-db", "import"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "subscriptions",
+      "path": "app/subscriptions",
+      "purpose": "Gestão de assinaturas recorrentes com métricas mensais e detecção automática de recorrência",
+      "primary_files": ["app/subscriptions/page.tsx"],
+      "functions": [
+        { "name": "monthlyEquivalent", "file": "app/subscriptions/page.tsx", "params": ["amount, period"], "returns": "number", "confidence": "confirmed" }
+      ],
+      "entities": ["Subscription"],
+      "business_rules": [
+        { "description": "next_due não é atualizado automaticamente após vencimento", "location": "app/subscriptions/page.tsx", "confidence": "unknown" },
+        { "description": "Alertas para vencimentos nos próximos 7 dias", "location": "app/subscriptions/page.tsx:117-124", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db"],
+      "algorithms": ["Normalização de períodos para valor mensal equivalente"],
+      "complexity": "medium"
+    },
+    {
+      "name": "installments",
+      "path": "app/installments",
+      "purpose": "Gestão de compras parceladas no cartão com rastreamento de progresso e detecção automática",
+      "primary_files": ["app/installments/page.tsx"],
+      "functions": [],
+      "entities": ["InstallmentGroup"],
+      "business_rules": [
+        { "description": "Número mínimo de parcelas: 2", "location": "app/installments/page.tsx:95", "confidence": "confirmed" },
+        { "description": "first_billing_month: regex /^(0[1-9]|1[0-2])\\/\\d{4}$/", "location": "app/installments/page.tsx:99", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db"],
+      "algorithms": [],
+      "complexity": "medium"
+    },
+    {
+      "name": "categories",
+      "path": "app/features/categories",
+      "purpose": "Categorias hierárquicas para transações — gestão via IPC, UI possivelmente em outros módulos",
+      "primary_files": [],
+      "functions": [],
+      "entities": ["Category"],
+      "business_rules": [
+        { "description": "Categorias suportam hierarquia via parent_id", "location": "app/types/electron.d.ts:168", "confidence": "confirmed" }
+      ],
+      "dependencies": ["ipc-db"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "llm",
+      "path": "lib/llm-client.ts",
+      "purpose": "Cliente LLM local via MediaPipe + Web Worker (alternativa offline ao Groq)",
+      "primary_files": ["lib/llm-client.ts", "lib/llm-worker.ts"],
+      "functions": [
+        { "name": "initLLM", "file": "lib/llm-client.ts", "params": ["modelBuffer"], "returns": "Promise<void>", "confidence": "confirmed" },
+        { "name": "generate", "file": "lib/llm-client.ts", "params": ["prompt"], "returns": "Promise<string>", "confidence": "confirmed" },
+        { "name": "isLLMReady", "file": "lib/llm-client.ts", "params": [], "returns": "boolean", "confidence": "confirmed" }
+      ],
+      "entities": [],
+      "business_rules": [],
+      "dependencies": [],
+      "algorithms": ["Async message queue com id counter para Web Worker"],
+      "complexity": "medium"
+    }
+  ]
+}
