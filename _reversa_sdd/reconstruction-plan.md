@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 8 concluídas | 14 pendentes
+**Status:** 22 tarefas | 9 concluídas | 13 pendentes
 
 ---
 
@@ -81,7 +81,7 @@
 **Pronto quando:** Funcionalidades de progresso e ativação/desativação disponíveis via REST.
 
 #### Tarefa 09 — API: Dashboard Analytics
-**Status:** pending
+**Status:** done
 **Lê:** `_reversa_sdd/sdd/dashboard.md`
 **Constrói:** Endpoints de agregação
 **Pronto quando:** API retorna dados agregados para o Dashboard mobile.
