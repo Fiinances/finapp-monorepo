@@ -69,7 +69,7 @@
 **Pronto quando:** API permite criar e editar bancos/cartões conforme as RNs.
 
 #### Tarefa 07 — Lógica de Negócio: Detecção de Padrões
-**Status:** pending
+**Status:** done
 **Lê:** `_reversa_sdd/sdd/ipc-db.md` (Algoritmos de detecção)
 **Constrói:** Serviços Java para detecção de parcelamentos e assinaturas
 **Pronto quando:** Algoritmos originais portados para Java/Postgres.
