@@ -63,7 +63,7 @@
 **Pronto quando:** Endpoints de CRUD e listagem funcional.
 
 #### Tarefa 06 — API: Banks & Cards
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/banks.md`
 **Constrói:** Endpoints para gestão de contas e cartões
 **Pronto quando:** API permite criar e editar bancos/cartões conforme as RNs.
