@@ -1,5 +1,5 @@
 # Arquivos de configuração com secrets — NUNCA commitar
-src/main/resources/application.properties
+.env
 
 # Build outputs
 target/
