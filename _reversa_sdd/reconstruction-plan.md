@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 11 concluídas | 11 pendentes
+**Status:** 22 tarefas | 12 concluídas | 10 pendentes
 
 ---
 
@@ -102,7 +102,7 @@
 ### Fase 3: Frontend Mobile (React Native)
 
 #### Tarefa 12 — Setup React Native, UI Lib & Themes
-**Status:** pending
+**Status:** ✅ done
 **Constrói:** Expo/CLI, **NativeWind**, **Gluestack UI**, Configuração de Temas Light/Dark
 **Pronto quando:** App inicia com suporte a temas e componentes básicos da UI Lib.
 
