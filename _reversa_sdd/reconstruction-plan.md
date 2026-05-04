@@ -112,7 +112,7 @@
 **Pronto quando:** Usuário consegue se logar e manter a sessão no app.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
-**Status:** pending
+**Status:** done
 **Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/categories.md`
 **Constrói:** FlatList com NativeWind + Gluestack
 **Pronto quando:** Transações renderizadas com suporte a Dark Mode.
