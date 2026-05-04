@@ -107,7 +107,7 @@
 **Pronto quando:** App inicia com suporte a temas e componentes básicos da UI Lib.
 
 #### Tarefa 13 — Integração Supabase Auth
-**Status:** pending
+**Status:** done
 **Constrói:** Telas de Login/Cadastro, Auth Provider
 **Pronto quando:** Usuário consegue se logar e manter a sessão no app.
 
