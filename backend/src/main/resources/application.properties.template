@@ -44,7 +44,13 @@ mp.openapi.extensions.smallrye.info.version=1.0.0
 mp.openapi.extensions.smallrye.info.description=API REST do Finapp — Controle Financeiro Pessoal
 
 # Health Check
+# Endpoints:
+#   GET /q/health       → todos os checks
+#   GET /q/health/live  → liveness  (LivenessCheck)
+#   GET /q/health/ready → readiness (DatabaseReadinessCheck — faz SELECT 1)
 quarkus.smallrye-health.ui.always-include=true
+quarkus.smallrye-health.liveness-path=/q/health/live
+quarkus.smallrye-health.readiness-path=/q/health/ready
 
 # =============================================================
 # PERFIL: dev (ambiente local — quarkus:dev)
