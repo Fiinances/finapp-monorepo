@@ -1,0 +1,18 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "Dockerfile",
+            "use": "@vercel/docker"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/$1"
+        }
+    ],
+    "env": {
+        "QUARKUS_DATASOURCE_DB_KIND": "postgresql"
+    }
+}

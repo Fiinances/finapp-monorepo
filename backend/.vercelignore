@@ -1,0 +1,20 @@
+# Build artifacts Maven/Quarkus — não enviar para a Vercel
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Testes
+src/test/
+
+# Arquivos de ambiente locais
+.env
+application.properties
+
+# Logs
+*.log

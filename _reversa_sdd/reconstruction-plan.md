@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 10 concluídas | 12 pendentes
+**Status:** 22 tarefas | 11 concluídas | 11 pendentes
 
 ---
 
@@ -93,7 +93,7 @@
 **Pronto quando:** Testes cobrem os endpoints de Transactions, Accounts, Cards, Categories, Installments e Subscriptions com no mínimo 80% de cobertura dos branches críticos; todos os testes passam em CI.
 
 #### Tarefa 11 — Deploy Vercel (Quarkus)
-**Status:** pending
+**Status:** ✅ done
 **Constrói:** `vercel.json`, build scripts
 **Pronto quando:** API acessível via URL de produção da Vercel.
 
