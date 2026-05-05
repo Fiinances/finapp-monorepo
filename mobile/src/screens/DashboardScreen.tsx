@@ -8,8 +8,8 @@ import {
     ActivityIndicator,
     useColorScheme,
     RefreshControl,
-    SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDashboard } from '@/hooks/useDashboard';
 import { MonthlyChart, CategoryChart, SubscriptionsList } from '@/components/dashboard';
 import { SideMenu } from '@/components/ui';

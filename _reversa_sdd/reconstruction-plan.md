@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 25 tarefas | 18 concluídas | 7 pendentes
+**Status:** 26 tarefas | 19 concluídas | 7 pendentes
 
 ---
 
@@ -145,6 +145,16 @@
 - `signOut()` chamado com 250 ms de delay para a animação de fechamento completar antes da mudança de estado
 - `@expo/vector-icons` instalado como dependência
 **Pronto quando:** Usuário abre o menu lateral pelo ícone hamburguer, visualiza seu e-mail e consegue fazer logout retornando para a tela de Login.
+
+#### Tarefa 13-D — Correção de Safe Area no Dashboard
+**Status:** ✅ done
+**Lê:** `mobile/src/screens/DashboardScreen.tsx`
+**Constrói:** Ajuste de insets para o header não sobrepor a status bar
+**Detalhes:**
+- `SafeAreaView` nativo do React Native (`react-native`) não respeita os insets corretamente em todos os dispositivos Android
+- Substituído por `SafeAreaView` de `react-native-safe-area-context` (já presente no projeto via Expo)
+- Garante que título "Dashboard" e botão hamburguer ficam abaixo da barra de status (hora, bateria, rede) em iOS e Android
+**Pronto quando:** Header do Dashboard visível abaixo da status bar em ambas as plataformas.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
 **Status:** done
