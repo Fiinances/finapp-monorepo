@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 23 tarefas | 16 concluídas | 7 pendentes
+**Status:** 25 tarefas | 18 concluídas | 7 pendentes
 
 ---
 
@@ -121,6 +121,30 @@
 - Validação obrigatória para submit: mínimo 8 caracteres + 1 maiúscula + 1 número
 - Remover mensagem "Verifique seu e-mail" após cadastro bem-sucedido — navegar diretamente para Login (confirmação de e-mail desativada no Supabase)
 **Pronto quando:** Formulário exibe erros inline por campo; barra de força de senha atualiza em tempo real; após cadastro bem-sucedido o usuário é redirecionado ao Login sem mensagem de confirmação de e-mail.
+
+#### Tarefa 13-B — Validação de Formulário com Zod
+**Status:** ✅ done
+**Lê:** `mobile/src/screens/auth/RegisterScreen.tsx`
+**Constrói:** Schema Zod substituindo função manual `validateFields`
+**Detalhes:**
+- Instalar `zod` v4 (`npm install zod`)
+- Criar `registerSchema` com `.superRefine()` para checar se as senhas coincidem
+- `parseErrors()` mapeia `z.ZodIssueCode` para `FieldErrors` (primeiro erro por campo)
+- Tipo `z.ZodSafeParseError<unknown>` (renomeado no Zod v4 — era `SafeParseError`)
+**Pronto quando:** Toda validação do RegisterScreen passa pelo schema Zod sem erros de TypeScript.
+
+#### Tarefa 13-C — Menu Lateral (Drawer) com Logout
+**Status:** ✅ done
+**Lê:** `mobile/src/screens/DashboardScreen.tsx`, `mobile/src/contexts/AuthContext.tsx`
+**Constrói:** Componente `SideMenu` com animação de deslize + botão hamburguer no Dashboard
+**Detalhes:**
+- `SideMenu.tsx` em `components/ui/` — drawer animado com `Animated.spring` (entrada) e `Animated.timing` (saída)
+- Backdrop semi-transparente com `Pressable` para fechar ao tocar fora
+- Avatar com iniciais do e-mail do usuário + seção de navegação + botão "Sair da conta"
+- Botão hamburguer (`Feather/menu`) no canto superior direito do Dashboard
+- `signOut()` chamado com 250 ms de delay para a animação de fechamento completar antes da mudança de estado
+- `@expo/vector-icons` instalado como dependência
+**Pronto quando:** Usuário abre o menu lateral pelo ícone hamburguer, visualiza seu e-mail e consegue fazer logout retornando para a tela de Login.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
 **Status:** done

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import { Feather } from '@expo/vector-icons';
+import React, { useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import { useDashboard } from '@/hooks/useDashboard';
 import { MonthlyChart, CategoryChart, SubscriptionsList } from '@/components/dashboard';
+import { SideMenu } from '@/components/ui';
 import { formatCurrency } from '@/utils/transactions';
 
 export function DashboardScreen() {
@@ -21,6 +23,8 @@ export function DashboardScreen() {
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
     const bgCard = isDark ? '#1a1f2e' : '#ffffff';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
+
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const {
         monthlyData,
@@ -64,98 +68,133 @@ export function DashboardScreen() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
-            <ScrollView
-                contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={loading}
-                        onRefresh={refetch}
-                        tintColor={isDark ? '#e5e7eb' : '#1a1f2e'}
-                    />
-                }
-            >
-                {/* Header */}
-                <Text style={{ color: textColor, fontSize: 22, fontWeight: '700', marginBottom: 4 }}>
-                    Dashboard
-                </Text>
-                <Text style={{ color: labelColor, fontSize: 14, marginBottom: 20 }}>
-                    {monthLabel(displayMonth)}
-                </Text>
-
-                {/* Error banner */}
-                {error && (
+        <View style={{ flex: 1, backgroundColor: bg }}>
+            <SafeAreaView style={{ flex: 1 }}>
+                <ScrollView
+                    contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={loading}
+                            onRefresh={refetch}
+                            tintColor={isDark ? '#e5e7eb' : '#1a1f2e'}
+                        />
+                    }
+                >
+                    {/* Header */}
                     <View
                         style={{
-                            backgroundColor: '#fef2f2',
-                            borderRadius: 10,
-                            padding: 12,
-                            marginBottom: 16,
                             flexDirection: 'row',
+                            alignItems: 'flex-start',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
+                            marginBottom: 20,
                         }}
                     >
-                        <Text style={{ color: '#ef4444', fontSize: 13, flex: 1 }}>{error}</Text>
-                        <TouchableOpacity onPress={refetch}>
-                            <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600', marginLeft: 8 }}>
-                                Tentar novamente
+                        <View>
+                            <Text style={{ color: textColor, fontSize: 22, fontWeight: '700', marginBottom: 4 }}>
+                                Dashboard
                             </Text>
+                            <Text style={{ color: labelColor, fontSize: 14 }}>
+                                {monthLabel(displayMonth)}
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => setMenuOpen(true)}
+                            activeOpacity={0.7}
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                backgroundColor: bgCard,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                shadowColor: '#000',
+                                shadowOpacity: 0.06,
+                                shadowRadius: 4,
+                                elevation: 2,
+                            }}
+                        >
+                            <Feather name="menu" size={20} color={textColor} />
                         </TouchableOpacity>
                     </View>
-                )}
 
-                {/* Summary cards row */}
-                {currentSummary && (
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            gap: 10,
-                            marginBottom: 16,
-                        }}
-                    >
-                        <SummaryCard
-                            label="Receita"
-                            value={currentSummary.income}
-                            color="#22c55e"
-                            bgCard={bgCard}
-                            textColor={textColor}
-                            labelColor={labelColor}
-                        />
-                        <SummaryCard
-                            label="Despesa"
-                            value={currentSummary.expense}
-                            color="#ef4444"
-                            bgCard={bgCard}
-                            textColor={textColor}
-                            labelColor={labelColor}
-                        />
-                        <SummaryCard
-                            label="Saldo"
-                            value={currentSummary.net}
-                            color="#6366f1"
-                            bgCard={bgCard}
-                            textColor={textColor}
-                            labelColor={labelColor}
-                        />
-                    </View>
-                )}
+                    {/* Error banner */}
+                    {error && (
+                        <View
+                            style={{
+                                backgroundColor: '#fef2f2',
+                                borderRadius: 10,
+                                padding: 12,
+                                marginBottom: 16,
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Text style={{ color: '#ef4444', fontSize: 13, flex: 1 }}>{error}</Text>
+                            <TouchableOpacity onPress={refetch}>
+                                <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600', marginLeft: 8 }}>
+                                    Tentar novamente
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
-                {/* Monthly bar chart */}
-                {monthlyData.length > 0 && <MonthlyChart data={monthlyData} />}
+                    {/* Summary cards row */}
+                    {currentSummary && (
+                        <View
+                            style={{
+                                flexDirection: 'row',
+                                gap: 10,
+                                marginBottom: 16,
+                            }}
+                        >
+                            <SummaryCard
+                                label="Receita"
+                                value={currentSummary.income}
+                                color="#22c55e"
+                                bgCard={bgCard}
+                                textColor={textColor}
+                                labelColor={labelColor}
+                            />
+                            <SummaryCard
+                                label="Despesa"
+                                value={currentSummary.expense}
+                                color="#ef4444"
+                                bgCard={bgCard}
+                                textColor={textColor}
+                                labelColor={labelColor}
+                            />
+                            <SummaryCard
+                                label="Saldo"
+                                value={currentSummary.net}
+                                color="#6366f1"
+                                bgCard={bgCard}
+                                textColor={textColor}
+                                labelColor={labelColor}
+                            />
+                        </View>
+                    )}
 
-                {/* Category donut chart */}
-                <CategoryChart
-                    slices={categorySlices}
-                    selectedMonth={selectedMonth}
-                    onMonthChange={setSelectedMonth}
-                    availableMonths={availableMonths}
-                />
+                    {/* Monthly bar chart */}
+                    {monthlyData.length > 0 && <MonthlyChart data={monthlyData} />}
 
-                {/* Subscriptions list (null if empty — RN-06) */}
-                <SubscriptionsList subscriptions={subscriptions} totals={subscriptionTotals} />
-            </ScrollView>
-        </SafeAreaView>
+                    {/* Category donut chart */}
+                    <CategoryChart
+                        slices={categorySlices}
+                        selectedMonth={selectedMonth}
+                        onMonthChange={setSelectedMonth}
+                        availableMonths={availableMonths}
+                    />
+
+                    {/* Subscriptions list (null if empty — RN-06) */}
+                    <SubscriptionsList subscriptions={subscriptions} totals={subscriptionTotals} />
+                </ScrollView>
+            </SafeAreaView>
+
+            {/* Side menu drawer (absolute, over everything) */}
+            <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+        </View>
     );
 }
 
