@@ -1,7 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -10,11 +9,76 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { z } from 'zod';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+
+const registerSchema = z
+    .object({
+        email: z
+            .string()
+            .min(1, 'E-mail obrigatório.')
+            .email('Informe um e-mail válido.'),
+        password: z
+            .string()
+            .min(1, 'Senha obrigatória.')
+            .min(8, 'A senha deve ter pelo menos 8 caracteres.')
+            .regex(/[A-Z]/, 'Inclua ao menos uma letra maiúscula.')
+            .regex(/[0-9]/, 'Inclua ao menos um número.'),
+        confirm: z.string().min(1, 'Confirme sua senha.'),
+    })
+    .superRefine((data, ctx) => {
+        if (data.confirm !== data.password) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['confirm'],
+                message: 'As senhas não coincidem.',
+            });
+        }
+    });
+
+type FieldErrors = { email: string; password: string; confirm: string };
+
+const EMPTY_ERRORS: FieldErrors = { email: '', password: '', confirm: '' };
+
+function parseErrors(result: z.ZodSafeParseError<unknown>): FieldErrors {
+    const errors = { ...EMPTY_ERRORS };
+    for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof FieldErrors;
+        if (field in errors && !errors[field]) {
+            errors[field] = issue.message;
+        }
+    }
+    return errors;
+}
+
+interface PasswordStrength {
+    score: number; // 0-4
+    label: string;
+    color: string;
+}
+
+function getPasswordStrength(pwd: string): PasswordStrength {
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    const levels: PasswordStrength[] = [
+        { score: 0, label: '', color: '' },
+        { score: 1, label: 'Fraca', color: '#ef4444' },
+        { score: 2, label: 'Média', color: '#f97316' },
+        { score: 3, label: 'Forte', color: '#84cc16' },
+        { score: 4, label: 'Muito forte', color: '#22c55e' },
+    ];
+    return levels[score];
+}
+
+
 
 export function RegisterScreen({ navigation }: Props) {
     const { signUp } = useAuth();
@@ -22,31 +86,27 @@ export function RegisterScreen({ navigation }: Props) {
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>(EMPTY_ERRORS);
+    const [submitError, setSubmitError] = useState('');
+
+    const strength = getPasswordStrength(password);
 
     async function handleRegister() {
-        if (!email || !password || !confirm) {
-            Alert.alert('Erro', 'Preencha todos os campos.');
+        setSubmitError('');
+        const result = registerSchema.safeParse({ email: email.trim(), password, confirm });
+        if (!result.success) {
+            setFieldErrors(parseErrors(result));
             return;
         }
-        if (password !== confirm) {
-            Alert.alert('Erro', 'As senhas não coincidem.');
-            return;
-        }
-        if (password.length < 6) {
-            Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres.');
-            return;
-        }
+
         setLoading(true);
         const { error } = await signUp(email.trim(), password);
         setLoading(false);
+
         if (error) {
-            Alert.alert('Erro ao cadastrar', error);
+            setSubmitError(error);
         } else {
-            Alert.alert(
-                'Cadastro realizado',
-                'Verifique seu e-mail para confirmar a conta.',
-                [{ text: 'OK', onPress: () => navigation.navigate('Login') }],
-            );
+            navigation.navigate('Login');
         }
     }
 
@@ -67,43 +127,107 @@ export function RegisterScreen({ navigation }: Props) {
                     Comece a organizar suas finanças
                 </Text>
 
+                {/* E-mail */}
                 <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
                     E-mail
                 </Text>
                 <TextInput
-                    className="border border-[#e5e7eb] dark:border-[#374151] rounded-lg px-4 py-3 mb-4 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e]"
+                    className={`border rounded-lg px-4 py-3 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e] ${fieldErrors.email
+                        ? 'border-[#ef4444]'
+                        : 'border-[#e5e7eb] dark:border-[#374151]'
+                        }`}
                     placeholder="seu@email.com"
                     placeholderTextColor="#9ca3af"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(v) => {
+                        setEmail(v);
+                        if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                    }}
                 />
+                {fieldErrors.email ? (
+                    <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.email}</Text>
+                ) : (
+                    <View className="mb-4" />
+                )}
 
+                {/* Senha */}
                 <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
                     Senha
                 </Text>
                 <TextInput
-                    className="border border-[#e5e7eb] dark:border-[#374151] rounded-lg px-4 py-3 mb-4 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e]"
-                    placeholder="Mínimo 6 caracteres"
+                    className={`border rounded-lg px-4 py-3 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e] ${fieldErrors.password
+                        ? 'border-[#ef4444]'
+                        : 'border-[#e5e7eb] dark:border-[#374151]'
+                        }`}
+                    placeholder="Mínimo 8 caracteres"
                     placeholderTextColor="#9ca3af"
                     secureTextEntry
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(v) => {
+                        setPassword(v);
+                        if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
+                    }}
                 />
+                {/* Barra de força de senha */}
+                {password.length > 0 && (
+                    <View className="mt-2">
+                        <View className="flex-row gap-1">
+                            {[1, 2, 3, 4].map((level) => (
+                                <View
+                                    key={level}
+                                    style={{
+                                        flex: 1,
+                                        height: 3,
+                                        borderRadius: 2,
+                                        backgroundColor: strength.score >= level ? strength.color : '#e5e7eb',
+                                    }}
+                                />
+                            ))}
+                        </View>
+                        {strength.label ? (
+                            <Text style={{ color: strength.color }} className="text-xs mt-1">
+                                Força da senha: {strength.label}
+                            </Text>
+                        ) : null}
+                    </View>
+                )}
+                {fieldErrors.password ? (
+                    <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.password}</Text>
+                ) : (
+                    <View className="mb-4" />
+                )}
 
+                {/* Confirmar senha */}
                 <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
                     Confirmar senha
                 </Text>
                 <TextInput
-                    className="border border-[#e5e7eb] dark:border-[#374151] rounded-lg px-4 py-3 mb-6 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e]"
+                    className={`border rounded-lg px-4 py-3 text-sm text-[#1a1f2e] dark:text-[#f8f9fc] bg-white dark:bg-[#1a1f2e] ${fieldErrors.confirm
+                        ? 'border-[#ef4444]'
+                        : 'border-[#e5e7eb] dark:border-[#374151]'
+                        }`}
                     placeholder="••••••••"
                     placeholderTextColor="#9ca3af"
                     secureTextEntry
                     value={confirm}
-                    onChangeText={setConfirm}
+                    onChangeText={(v) => {
+                        setConfirm(v);
+                        if (fieldErrors.confirm) setFieldErrors(prev => ({ ...prev, confirm: '' }));
+                    }}
                 />
+                {fieldErrors.confirm ? (
+                    <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.confirm}</Text>
+                ) : (
+                    <View className="mb-6" />
+                )}
+
+                {/* Erro de servidor */}
+                {submitError ? (
+                    <Text className="text-xs text-[#ef4444] mb-4 text-center">{submitError}</Text>
+                ) : null}
 
                 <Pressable
                     onPress={handleRegister}
@@ -118,3 +242,4 @@ export function RegisterScreen({ navigation }: Props) {
         </SafeAreaView>
     );
 }
+

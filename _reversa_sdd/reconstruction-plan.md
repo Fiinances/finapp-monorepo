@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 22 tarefas | 12 concluídas | 10 pendentes
+**Status:** 23 tarefas | 16 concluídas | 7 pendentes
 
 ---
 
@@ -110,6 +110,17 @@
 **Status:** done
 **Constrói:** Telas de Login/Cadastro, Auth Provider
 **Pronto quando:** Usuário consegue se logar e manter a sessão no app.
+
+#### Tarefa 13-A — Melhorias na Tela de Cadastro
+**Status:** ✅ done
+**Lê:** `mobile/src/screens/auth/RegisterScreen.tsx`, `mobile/src/contexts/AuthContext.tsx`
+**Constrói:** Validação inline por campo + Indicador de força de senha + Fluxo sem confirmação de e-mail
+**Detalhes:**
+- Substituir `Alert.alert()` de validação por mensagens de erro individuais sob cada campo (email, senha, confirmar senha)
+- Indicador visual de força de senha com 4 níveis: **Fraca / Média / Forte / Muito forte** — baseado em: comprimento ≥ 8, letra maiúscula, número, caractere especial
+- Validação obrigatória para submit: mínimo 8 caracteres + 1 maiúscula + 1 número
+- Remover mensagem "Verifique seu e-mail" após cadastro bem-sucedido — navegar diretamente para Login (confirmação de e-mail desativada no Supabase)
+**Pronto quando:** Formulário exibe erros inline por campo; barra de força de senha atualiza em tempo real; após cadastro bem-sucedido o usuário é redirecionado ao Login sem mensagem de confirmação de e-mail.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
 **Status:** done
