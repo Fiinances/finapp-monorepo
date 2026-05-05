@@ -118,7 +118,7 @@
 **Pronto quando:** Transações renderizadas com suporte a Dark Mode.
 
 #### Tarefa 15 — Tela: Dashboard (Gráficos Mobile)
-**Status:** pending
+**Status:** done
 **Lê:** `_reversa_sdd/sdd/dashboard.md`
 **Constrói:** Integração com gráficos mobile
 **Pronto quando:** Gráficos adaptados para visualização mobile e temas.

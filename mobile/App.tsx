@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto';
-import './src/global.css';
+import "./src/global.css"
 
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { StatusBar } from 'expo-status-bar';

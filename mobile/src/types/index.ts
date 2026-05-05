@@ -38,3 +38,18 @@ export interface MonthSummary {
     total: number;
     transactions: Transaction[];
 }
+
+export type SubscriptionPeriod = 'weekly' | 'monthly' | 'yearly';
+
+export interface Subscription {
+    id: number;
+    name: string;
+    amount: number;
+    period: SubscriptionPeriod;
+    type: 'income' | 'expense';
+    active: 0 | 1;
+    bank_account_id?: number | null;
+    credit_card_id?: number | null;
+    created_at?: string;
+    updated_at?: string;
+}

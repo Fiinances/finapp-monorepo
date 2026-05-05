@@ -1,4 +1,4 @@
-import { config as defaultConfig } from '@gluestack-ui/themed/build/theme';
+import { config as defaultConfig } from '@gluestack-ui/config';
 
 // Extensão do tema Gluestack UI com as cores semânticas do Finapp
 export const finappTheme = {
