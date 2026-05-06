@@ -25,7 +25,7 @@ export interface Transaction {
     billing_month?: string | null; // MM/YYYY
     category_id?: number | null;
     category?: Category | null;
-    bank_account_id?: number | null;
+    account_id?: number | null;
     credit_card_id?: number | null;
     created_at?: string;
     updated_at?: string;

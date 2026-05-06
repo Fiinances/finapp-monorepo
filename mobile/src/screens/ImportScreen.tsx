@@ -37,6 +37,7 @@ import {
     mapOfxToTransactions,
     type PreviewTransaction,
 } from '@/utils/importParsers';
+import { formatDate } from '@/utils/transactions';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -125,6 +126,9 @@ export function ImportScreen() {
         rowKey: null,
     });
 
+    // Pre-fetched map of external_id → { category_id } for existing transactions
+    const [existingTxMap, setExistingTxMap] = useState<Map<string, { category_id: number | null }>>(new Map());
+
     // ── Load accounts & cards ─────────────────────────────────────────────────
     useEffect(() => {
         void loadDestinations();
@@ -190,7 +194,39 @@ export function ImportScreen() {
                 setBillingMonth(inferred);
             }
 
-            setPreviewRows(rows);
+            // Pre-fetch existing external_ids to mark rows as new/update and preserve category_id
+            const externalIds = rows
+                .map(r => r.external_id)
+                .filter((id): id is string => !!id);
+            let newExistingTxMap = new Map<string, { category_id: number | null }>();
+            if (externalIds.length > 0) {
+                const { data: { user: previewUser } } = await supabase.auth.getUser();
+                if (previewUser) {
+                    const { data: existing } = await supabase
+                        .from('transactions')
+                        .select('external_id, category_id')
+                        .eq('user_id', previewUser.id)
+                        .in('external_id', externalIds);
+                    if (existing) {
+                        newExistingTxMap = new Map(
+                            existing.map(t => [
+                                t.external_id as string,
+                                { category_id: t.category_id as number | null },
+                            ])
+                        );
+                    }
+                }
+            }
+            setExistingTxMap(newExistingTxMap);
+
+            const markedRows = rows.map(r => ({
+                ...r,
+                importStatus: (r.external_id && newExistingTxMap.has(r.external_id))
+                    ? 'update' as const
+                    : 'new' as const,
+            }));
+
+            setPreviewRows(markedRows);
             setStep('preview');
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Erro ao ler arquivo.');
@@ -255,7 +291,7 @@ export function ImportScreen() {
             const cardId = isCard ? parseInt(accountId.slice(2), 10) : null;
             const acctId = !isCard ? parseInt(accountId.slice(2), 10) : null;
 
-            const rows = previewRows.map(r => ({
+            const upsertRows = previewRows.map(r => ({
                 user_id: user.id,
                 description: r.description,
                 amount: r.amount,
@@ -264,7 +300,8 @@ export function ImportScreen() {
                 source: r.source,
                 external_id: r.external_id ?? null,
                 installment_number: r.installment_number ?? null,
-                category_id: r.category_id ?? null,
+                // Preserve existing category_id if not manually set in this import
+                category_id: r.category_id ?? existingTxMap.get(r.external_id ?? '')?.category_id ?? null,
                 account_id: acctId,
                 credit_card_id: cardId,
                 billing_month: isCard ? billingMonth : null,
@@ -272,36 +309,19 @@ export function ImportScreen() {
 
             const { error: insertError } = await supabase
                 .from('transactions')
-                .upsert(rows, { onConflict: 'user_id,external_id', ignoreDuplicates: true });
+                .upsert(upsertRows, { onConflict: 'user_id,external_id', ignoreDuplicates: false });
 
             if (insertError) throw new Error(insertError.message);
 
-            // Calculate feedback counts
-            const externalIds = rows
-                .map(r => r.external_id)
-                .filter((id): id is string => id != null);
-
-            let existingCount = 0;
-            if (externalIds.length > 0) {
-                const { count } = await supabase
-                    .from('transactions')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('user_id', user.id)
-                    .in('external_id', externalIds);
-                existingCount = count ?? 0;
-            }
-
-            const totalProcessed = rows.length;
-            const withExternalId = externalIds.length;
-            const withoutExternalId = totalProcessed - withExternalId;
-            // "already existed" = those with external_id that matched existing rows
-            const alreadyExisted = Math.min(existingCount, withExternalId);
-            const newlyInserted = withExternalId - alreadyExisted + withoutExternalId;
+            // Feedback counts from importStatus pre-computed at preview time
+            const newCount = previewRows.filter(r => r.importStatus === 'new').length;
+            const updateCount = previewRows.filter(r => r.importStatus === 'update').length;
+            const totalProcessed = previewRows.length;
 
             const lines = [
                 `📥 Processadas: ${totalProcessed}`,
-                `✅ Novas: ${newlyInserted}`,
-                ...(alreadyExisted > 0 ? [`⏭ Já existentes (ignoradas): ${alreadyExisted}`] : []),
+                `✅ Novas: ${newCount}`,
+                ...(updateCount > 0 ? [`🔄 Atualizadas: ${updateCount}`] : []),
             ];
 
             Alert.alert(
@@ -320,6 +340,7 @@ export function ImportScreen() {
         setStep('upload');
         setFileName('');
         setPreviewRows([]);
+        setExistingTxMap(new Map());
         setError(null);
     };
 
@@ -638,7 +659,13 @@ function PreviewStep({
                 }}
             >
                 <Text style={{ color: textMuted, fontSize: 12 }}>
-                    {rows.length} transaç{rows.length === 1 ? 'ão' : 'ões'}
+                    {(() => {
+                        const n = rows.filter(r => r.importStatus === 'new').length;
+                        const u = rows.filter(r => r.importStatus === 'update').length;
+                        if (n > 0 && u > 0) return `✨ ${n} nova${n !== 1 ? 's' : ''} · 🔄 ${u} atual.`;
+                        if (u > 0) return `🔄 ${u} atualizar`;
+                        return `${rows.length} transaç${rows.length === 1 ? 'ão' : 'ões'}`;
+                    })()}
                 </Text>
                 <Text style={{ color: textMuted, fontSize: 12 }}>
                     Total: {rows.reduce((s, r) => s + (r.type === 'income' ? r.amount : -r.amount), 0)
@@ -938,6 +965,11 @@ function PreviewRow({
                     }}
                     placeholderTextColor={textMuted}
                 />
+                {row.importStatus === 'update' && (
+                    <View style={{ paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, backgroundColor: isDark ? '#2d2510' : '#fef3c7' }}>
+                        <Text style={{ fontSize: 10, color: '#f59e0b', fontWeight: '600' }}>🔄 Atualizar</Text>
+                    </View>
+                )}
                 <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Feather name="trash-2" size={15} color={isDark ? '#5a3a3a' : '#fca5a5'} />
                 </TouchableOpacity>
@@ -945,7 +977,7 @@ function PreviewRow({
 
             {/* Row: date + type badge + amount */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: textMuted, fontSize: 12, width: 84 }}>{row.date}</Text>
+                <Text style={{ color: textMuted, fontSize: 12, width: 84 }}>{formatDate(row.date)}</Text>
 
                 <TouchableOpacity
                     onPress={onCycleType}

@@ -3,7 +3,7 @@ import { TransactionType } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ImportSource = 'all' | 'bank_account' | 'credit_card' | 'manual';
+export type ImportSource = 'all' | 'bank_account' | 'credit_card';
 
 export interface TransactionFilters {
     month: string | null;                       // 'MM/YYYY' ou null = todos os meses

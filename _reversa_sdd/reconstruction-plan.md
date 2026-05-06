@@ -261,6 +261,18 @@
 - Exibir no resumo de confirmação: quantas são novas, quantas serão atualizadas e quantas tiveram source alterado (cartão→conta ou conta→cartão)
 **Pronto quando:** Reimportação de OFX/CSV atualiza todos os campos da transação existente, incluindo mudança de fonte entre conta bancária e cartão de crédito, sem duplicatas; CAs 09, 10 e 11 de `import.md` passam.
 
+#### Tarefa 18-G — Correções de Filtros, Schema e Formatação de Datas
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/transactions-filters.md`
+**Constrói:** Correções nos filtros de origem de transações, remoção de coluna redundante e formatação de datas
+**Concluído:**
+- **Filtro de origem corrigido** — `Transaction.bank_account_id` renomeado para `account_id` em `types/index.ts` para refletir o nome real da coluna no banco de dados; lógica de filtro em `useTransactions.ts` e `TransactionsScreen.tsx` reescrita: `'credit_card'` verifica `t.credit_card_id != null`; `'bank_account'` verifica `t.account_id != null`
+- **Filtro 'manual' removido** — opção `'manual'` removida de `ImportSource` em `useTransactionFilters.ts` e de `ORIGINS` em `TransactionFilterSheet.tsx`; não existia correspondência no schema (nenhuma coluna distingue transações manuais no banco)
+- **Coluna `category TEXT` removida de `transactions`** — migration `V4__remove_category_from_transactions.sql` criada com `ALTER TABLE transactions DROP COLUMN IF EXISTS category`; `category_id` FK + join com `transaction_categories` é a abordagem correta
+- **Data DD/MM/YYYY no preview de importação** — `ImportScreen.tsx` importa `formatDate` de `@/utils/transactions` e usa `formatDate(row.date)` na coluna de data do preview (antes exibia ISO bruto `YYYY-MM-DD`)
+- **Spec atualizada** — `transactions-filters.md` reflete os filtros corretos sem 'manual' e com lógica baseada em `account_id`/`credit_card_id`
+**Pronto quando:** Filtros de conta e cartão funcionam corretamente; coluna `category TEXT` removida do banco; datas exibidas em DD/MM/YYYY no preview de importação.
+
 ---
 
 ### Fase 4: Testes e Validação E2E

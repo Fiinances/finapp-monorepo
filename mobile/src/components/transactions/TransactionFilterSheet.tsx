@@ -38,7 +38,6 @@ const ORIGINS: { value: ImportSource; label: string }[] = [
     { value: 'all', label: 'Todas' },
     { value: 'bank_account', label: 'Conta' },
     { value: 'credit_card', label: 'Cartão' },
-    { value: 'manual', label: 'Manual' },
 ];
 
 const { height: SCREEN_H } = Dimensions.get('window');

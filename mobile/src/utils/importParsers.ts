@@ -21,6 +21,7 @@ export interface PreviewTransaction {
     external_id?: string;       // OFX FITID
     installment_number?: number | null;
     category_id?: number | null;
+    importStatus?: 'new' | 'update'; // set at preview time after querying existing records
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

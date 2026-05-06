@@ -58,10 +58,8 @@ export function TransactionsScreen() {
                 if (!filters.categoryIds.includes(catId)) return false;
             }
             if (filters.importSource !== 'all') {
-                const src = t.credit_card_id != null
-                    ? 'credit_card'
-                    : t.bank_account_id != null ? 'bank_account' : 'manual';
-                if (src !== filters.importSource) return false;
+                if (filters.importSource === 'credit_card' && t.credit_card_id == null) return false;
+                if (filters.importSource === 'bank_account' && t.account_id == null) return false;
             }
             return true;
         });

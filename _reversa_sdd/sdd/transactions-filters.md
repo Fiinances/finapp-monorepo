@@ -27,7 +27,7 @@ Permitir que o usuário filtre a lista de transações por múltiplos critérios
 | **Mês** | seleção única | qualquer mês com transações; padrão = mês atual |
 | **Tipo de transação** | múltipla seleção | entrada, saída, transferência, investimento, fatura |
 | **Categoria** | múltipla seleção | categorias do usuário + "Sem categoria" |
-| **Origem** | seleção única | conta bancária, cartão de crédito, manual, todas |
+| **Origem** | seleção única | conta bancária (`account_id` não-nulo), cartão de crédito (`credit_card_id` não-nulo), todas |
 
 ---
 
@@ -55,7 +55,7 @@ Bottom sheet deslizável que aparece ao tocar no botão "filter" do header.
 │  (chips expansíveis, multi-select)              │
 │                                                 │
 │  Origem                                         │
-│  [Todas] [Conta bancária] [Cartão] [Manual]     │
+│  [Todas] [Conta bancária] [Cartão]     │
 │  (radio pills)                                  │
 │                                                 │
 │  [ Aplicar filtros ]                            │
@@ -80,7 +80,7 @@ interface TransactionFilters {
   month: string | null;                         // 'MM/YYYY' ou null = todos
   types: TransactionType[];                     // [] = todos
   categoryIds: (number | 'uncategorized')[];   // [] = todas
-  importSource: 'all' | 'bank_account' | 'credit_card' | 'manual';
+  importSource: 'all' | 'bank_account' | 'credit_card';
 }
 
 const DEFAULT_FILTERS: TransactionFilters = {
@@ -127,16 +127,15 @@ function applyFilters(transactions: Transaction[], filters: TransactionFilters):
       if (!match) return false;
     }
     if (filters.importSource !== 'all') {
-      if (filters.importSource === 'manual' && t.import_batch_id != null) return false;
-      if (filters.importSource === 'bank_account' && t.account_source !== 'bank_account') return false;
-      if (filters.importSource === 'credit_card' && t.account_source !== 'credit_card') return false;
+      if (filters.importSource === 'credit_card' && t.credit_card_id == null) return false;
+      if (filters.importSource === 'bank_account' && t.account_id == null) return false;
     }
     return true;
   });
 }
 ```
 
-> **Nota:** `t.account_source` é derivado em runtime: se `t.credit_card_id != null` → `'credit_card'`; se `t.account_id != null` → `'bank_account'`; senão `'manual'`.
+> **Nota:** O filtro de origem é direto: `'credit_card'` filtra transações com `credit_card_id != null`; `'bank_account'` filtra transações com `account_id != null`. O filtro `'manual'` foi removido por não ter correspondência no schema (não existe coluna específica para transações manuais).
 
 ---
 
