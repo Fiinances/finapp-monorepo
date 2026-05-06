@@ -8,4 +8,6 @@ export type AppTabParamList = {
     Transactions: undefined;
     Banks: undefined;
     More: undefined;
+    Installments: undefined;
+    Subscriptions: undefined;
 };

@@ -65,13 +65,33 @@ export type SubscriptionPeriod = 'weekly' | 'monthly' | 'yearly';
 
 export interface Subscription {
     id: number;
+    user_id?: string;
     name: string;
     amount: number;
     period: SubscriptionPeriod;
     type: 'income' | 'expense';
     active: 0 | 1;
+    next_due?: string | null;
+    category?: string | null;
+    color?: string | null;
     bank_account_id?: number | null;
     credit_card_id?: number | null;
     created_at?: string;
     updated_at?: string;
+}
+
+export interface InstallmentGroup {
+    id: number;
+    user_id?: string;
+    credit_card_id: number;
+    description: string;
+    total_amount: number;
+    installments: number;
+    first_billing_month: string; // MM/YYYY
+    category?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    // Computed locally
+    real_paid_installments?: number;
+    real_remaining_installments?: number;
 }

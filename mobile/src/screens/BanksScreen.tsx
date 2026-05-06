@@ -1,6 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSideMenu } from '@/contexts/SideMenuContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Animated,
@@ -19,12 +18,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useBanks } from '@/hooks/useBanks';
-import type { AppTabParamList } from '@/navigation/types';
 import { BankAccount, CreditCard } from '@/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-type NavProp = NativeStackNavigationProp<AppTabParamList>;
 
 interface AccountFormState {
     name: string;
@@ -97,7 +93,7 @@ function fmtOptional(val?: number | null, suffix = '') {
 // ── BanksScreen ──────────────────────────────────────────────────────────────
 
 export function BanksScreen() {
-    const navigation = useNavigation<NavProp>();
+    const { openMenu } = useSideMenu();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
 
@@ -330,7 +326,7 @@ export function BanksScreen() {
                     }}
                 >
                     <TouchableOpacity
-                        onPress={() => navigation.goBack()}
+                        onPress={openMenu}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         style={{
                             width: 38, height: 38, borderRadius: 19,
@@ -338,7 +334,7 @@ export function BanksScreen() {
                             alignItems: 'center', justifyContent: 'center',
                         }}
                     >
-                        <Feather name="arrow-left" size={18} color={textColor} />
+                        <Feather name="menu" size={18} color={textColor} />
                     </TouchableOpacity>
 
                     <Text style={{ color: textColor, fontSize: 18, fontWeight: '700' }}>

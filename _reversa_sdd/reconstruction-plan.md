@@ -157,10 +157,15 @@
 **Pronto quando:** Header do Dashboard visível abaixo da status bar em ambas as plataformas.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
-**Status:** done
+**Status:** pending
 **Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/categories.md`
-**Constrói:** FlatList com NativeWind + Gluestack
-**Pronto quando:** Transações renderizadas com suporte a Dark Mode.
+**Constrói:** `TransactionsScreen.tsx` com FlatList/SectionList + hook `useTransactions` integrado
+**Pendências identificadas:**
+- `components/transactions/TransactionList.tsx` e `TransactionItem.tsx` existem mas usam `className` (NativeWind) — incompatível com o padrão atual do projeto (inline `style` obrigatório)
+- `hooks/useTransactions.ts` existe e funcional (busca do Supabase com agrupamento mensal)
+- **Falta:** `screens/TransactionsScreen.tsx` — rota `Transactions` ainda aponta para `PlaceholderScreen`
+- Os componentes existentes **não são usados em nenhuma tela**
+**Pronto quando:** `TransactionsScreen` criada com lista agrupada por mês, dark mode via inline styles, navegável pelo SideMenu; botão hamburguer no header (padrão T17).
 
 #### Tarefa 15 — Tela: Dashboard (Gráficos Mobile)
 **Status:** done
@@ -179,9 +184,19 @@
 - **Fix schema** — `V3__credit_cards_account_id_nullable.sql` aplicada no Supabase: `credit_cards.account_id` tornado nullable e FK alterada para `ON DELETE SET NULL`; corrige erro *"null value in column account_id violates not-null constraint"* ao criar cartão sem vínculo bancário
 
 #### Tarefa 17 — Tela: Gestão de Parcelamentos e Assinaturas
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
 **Constrói:** Telas de detalhe e detecção automática
+**Concluído:**
+- `types/index.ts` — `InstallmentGroup` adicionado; `Subscription` atualizado com campos de recorrência
+- `hooks/useInstallments.ts` — CRUD completo + cálculo de progresso por parcela; `INSERT` inclui `user_id` obrigatoriamente (RLS)
+- `hooks/useSubscriptions.ts` — CRUD + toggle otimista de ativo/inativo + helpers exportados (`monthlyEquivalent`, `resolveAccountName`)
+- `screens/InstallmentsScreen.tsx` — métricas, lista por grupo, formulário com validação, AppDialog para confirmações
+- `screens/SubscriptionsScreen.tsx` — 4 métricas (mensal/anual/ativas/inativas), lista, formulário, AppDialog
+- `navigation/types.ts` — rotas `Installments` e `Subscriptions` adicionadas a `AppTabParamList`
+- `navigation/AppNavigator.tsx` — novas telas registradas; `SideMenuProvider` envolvendo o Stack; `<SideMenu>` como overlay global
+- `contexts/SideMenuContext.tsx` — contexto criado com `isMenuOpen`, `openMenu`, `closeMenu`
+- **Refactor de navegação UX:** botão hamburguer movido para o lado **esquerdo** em todas as telas; botões de retorno (`arrow-left` / `goBack()`) removidos das sub-telas (Banks, Installments, Subscriptions) e substituídos pelo ícone `menu` que chama `openMenu()` via contexto — qualquer tela pode abrir o SideMenu independentemente
 **Pronto quando:** Fluxos de detecção portados para a UI mobile.
 
 #### Tarefa 18 — Fluxo de Importação (Mobile)

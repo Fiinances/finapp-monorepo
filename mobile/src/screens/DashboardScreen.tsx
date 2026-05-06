@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
     View,
     Text,
@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDashboard } from '@/hooks/useDashboard';
 import { MonthlyChart, CategoryChart, SubscriptionsList } from '@/components/dashboard';
-import { SideMenu } from '@/components/ui';
+import { useSideMenu } from '@/contexts/SideMenuContext';
 import { formatCurrency } from '@/utils/transactions';
 
 export function DashboardScreen() {
@@ -24,7 +24,7 @@ export function DashboardScreen() {
     const bgCard = isDark ? '#1a1f2e' : '#ffffff';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
 
-    const [menuOpen, setMenuOpen] = useState(false);
+    const { openMenu } = useSideMenu();
 
     const {
         monthlyData,
@@ -89,17 +89,8 @@ export function DashboardScreen() {
                             marginBottom: 20,
                         }}
                     >
-                        <View>
-                            <Text style={{ color: textColor, fontSize: 22, fontWeight: '700', marginBottom: 4 }}>
-                                Dashboard
-                            </Text>
-                            <Text style={{ color: labelColor, fontSize: 14 }}>
-                                {monthLabel(displayMonth)}
-                            </Text>
-                        </View>
-
                         <TouchableOpacity
-                            onPress={() => setMenuOpen(true)}
+                            onPress={openMenu}
                             activeOpacity={0.7}
                             style={{
                                 width: 40,
@@ -116,6 +107,15 @@ export function DashboardScreen() {
                         >
                             <Feather name="menu" size={20} color={textColor} />
                         </TouchableOpacity>
+
+                        <View>
+                            <Text style={{ color: textColor, fontSize: 22, fontWeight: '700', marginBottom: 4 }}>
+                                Dashboard
+                            </Text>
+                            <Text style={{ color: labelColor, fontSize: 14 }}>
+                                {monthLabel(displayMonth)}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* Error banner */}
@@ -192,8 +192,7 @@ export function DashboardScreen() {
                 </ScrollView>
             </SafeAreaView>
 
-            {/* Side menu drawer (absolute, over everything) */}
-            <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+
         </View>
     );
 }

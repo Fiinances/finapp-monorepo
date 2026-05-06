@@ -222,7 +222,14 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                     <MenuItem
                         icon="repeat"
                         label="Parcelamentos"
-                        onPress={onClose}
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Installments'), 250); }}
+                        textPrimary={textPrimary}
+                        bgActive={bgItemActive}
+                    />
+                    <MenuItem
+                        icon="refresh-cw"
+                        label="Assinaturas"
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Subscriptions'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
                     />
