@@ -275,6 +275,20 @@
 
 ---
 
+#### Tarefa 18-H — Transaction Card UI + Edit Sheet
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/transactions.md`
+**Constrói:** `TransactionEditSheet.tsx`, `updateTransaction` no hook, integração na `TransactionsScreen`
+**Concluído:**
+- **TransactionEditSheet criado** — bottom sheet (Modal + Animated.View) com drag handle, header "Editar transação" e botão X de fechar; campos: type pills em scroll horizontal, description TextInput, linha valor+data, category chips em scroll horizontal ("Sem categoria" como primeira opção = null); footer com botões Cancelar/Salvar; validação inline; KeyboardAvoidingView para iOS
+- **updateTransaction no useTransactions.ts** — novo método `updateTransaction(id, patch)` que executa `supabase.from('transactions').update({...}).eq('id', id)` e chama `refetch`; `TransactionPatch` importado de `TransactionEditSheet.tsx`
+- **TransactionsScreen integrada** — estado `editTarget` e `editSaving`; `onPressItem={(tx) => setEditTarget(tx)}` passado para `TransactionList`; `TransactionEditSheet` adicionado com `onSave={handleSaveEdit}` e `onClose={() => setEditTarget(null)}`
+- **Exports atualizados** — `index.ts` exporta `TransactionEditSheet` e `TransactionPatch`
+- **Spec atualizada** — `sdd/transactions.md` documenta o padrão Mobile Card + Edit Sheet
+**Pronto quando:** Ao tocar em qualquer transação, o bottom sheet abre pré-populado; usuário pode alterar categoria, descrição, tipo, valor e data; salvar persiste no Supabase e fecha o sheet.
+
+---
+
 ### Fase 4: Testes e Validação E2E
 
 #### Tarefa 19 — Testes Automatizados: Frontend

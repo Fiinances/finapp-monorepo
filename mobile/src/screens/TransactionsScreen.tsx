@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import {
+    Alert,
     Text,
     TouchableOpacity,
     useColorScheme,
@@ -8,12 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TransactionFilterSheet, TransactionList } from '@/components/transactions';
+import { TransactionEditSheet, TransactionFilterSheet, TransactionList } from '@/components/transactions';
 import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Category } from '@/types';
+import { Category, Transaction } from '@/types';
 
 function monthLabelShort(my: string): string {
     if (!my) return '';
@@ -32,8 +33,10 @@ export function TransactionsScreen() {
         useTransactionFilters();
 
     const [sheetVisible, setSheetVisible] = useState(false);
+    const [editTarget, setEditTarget] = useState<Transaction | null>(null);
+    const [editSaving, setEditSaving] = useState(false);
 
-    const { transactions: allTransactions, loading, refetch } = useTransactions();
+    const { transactions: allTransactions, loading, refetch, updateTransaction } = useTransactions();
 
     const categories = useMemo<Category[]>(() => {
         const map = new Map<number, Category>();
@@ -64,6 +67,18 @@ export function TransactionsScreen() {
             return true;
         });
     }, [allTransactions, filters]);
+
+    async function handleSaveEdit(id: number, patch: Parameters<typeof updateTransaction>[1]) {
+        setEditSaving(true);
+        try {
+            await updateTransaction(id, patch);
+            setEditTarget(null);
+        } catch (e) {
+            Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível salvar.');
+        } finally {
+            setEditSaving(false);
+        }
+    }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
@@ -107,6 +122,7 @@ export function TransactionsScreen() {
                     loading={loading}
                     onRefresh={refetch}
                     refreshing={loading}
+                    onPressItem={(tx) => setEditTarget(tx)}
                 />
             </View>
 
@@ -132,6 +148,15 @@ export function TransactionsScreen() {
                     });
                     setImportSource(applied.importSource);
                 }}
+            />
+            {/* Edit Sheet */}
+            <TransactionEditSheet
+                visible={editTarget !== null}
+                transaction={editTarget}
+                categories={categories}
+                saving={editSaving}
+                onSave={handleSaveEdit}
+                onClose={() => setEditTarget(null)}
             />
         </SafeAreaView>
     );

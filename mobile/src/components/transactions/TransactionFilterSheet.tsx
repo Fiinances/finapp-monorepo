@@ -4,6 +4,7 @@ import {
     Animated,
     Dimensions,
     Modal,
+    PanResponder,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -80,6 +81,36 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
 
     const slideAnim = useRef(new Animated.Value(SHEET_H)).current;
 
+    // Keep a stable ref to onClose so the PanResponder closure is never stale
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gs) => gs.dy > 4,
+            onPanResponderMove: (_, gs) => {
+                if (gs.dy > 0) slideAnim.setValue(gs.dy);
+            },
+            onPanResponderRelease: (_, gs) => {
+                if (gs.dy > 80 || gs.vy > 0.4) {
+                    Animated.timing(slideAnim, {
+                        toValue: SHEET_H,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => onCloseRef.current());
+                } else {
+                    Animated.spring(slideAnim, {
+                        toValue: 0,
+                        damping: 24,
+                        stiffness: 200,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
     // local draft state (only committed on Apply)
     const [draft, setDraft] = useState<TransactionFilters>(filters);
 
@@ -155,8 +186,11 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                     transform: [{ translateY: slideAnim }],
                 }}
             >
-                {/* Drag handle */}
-                <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                {/* Drag handle — swipe down to close */}
+                <View
+                    {...panResponder.panHandlers}
+                    style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}
+                >
                     <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: handleColor }} />
                 </View>
 

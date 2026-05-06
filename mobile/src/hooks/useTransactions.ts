@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { TransactionPatch } from '@/components/transactions/TransactionEditSheet';
 import { supabase } from '@/lib/supabase';
 import { MonthSummary, Transaction } from '@/types';
 import { buildSummaries, txBillingMonth } from '@/utils/transactions';
@@ -11,6 +12,7 @@ interface UseTransactionsResult {
     loading: boolean;
     error: string | null;
     refetch: () => Promise<void>;
+    updateTransaction: (id: number, patch: TransactionPatch) => Promise<void>;
 }
 
 function applyFilters(rows: Transaction[], filters: TransactionFilters): Transaction[] {
@@ -60,7 +62,23 @@ export function useTransactions(filters?: TransactionFilters): UseTransactionsRe
         void fetch();
     }, [fetch]);
 
+    const updateTransaction = useCallback(async (id: number, patch: TransactionPatch): Promise<void> => {
+        const { error: sbError } = await supabase
+            .from('transactions')
+            .update({
+                description: patch.description,
+                amount: patch.amount,
+                type: patch.type,
+                date: patch.date,
+                category_id: patch.category_id,
+            })
+            .eq('id', id);
+
+        if (sbError) throw new Error(sbError.message);
+        await fetch();
+    }, [fetch]);
+
     const transactions = filters ? applyFilters(allTransactions, filters) : allTransactions;
 
-    return { transactions, summaries, loading, error, refetch: fetch };
+    return { transactions, summaries, loading, error, refetch: fetch, updateTransaction };
 }

@@ -304,3 +304,106 @@ Então: retorna "" (string vazia — nenhum match de regex)
 |---|---|---|
 | `app/types/electron.d.ts` | Tipo TypeScript | Interface `Transaction`, `MonthSummary` |
 | Nenhuma dependência runtime | — | Todas as funções são puras e não têm imports externos |
+
+---
+
+## 11. Mobile UI — Transaction Card + Edit Sheet (Tarefa 18-H)
+
+> Adicionado em 2026-05-06 | Rastreabilidade: `mobile/src/components/transactions/TransactionEditSheet.tsx`
+
+### 11.1 TransactionItem — Card de Transação
+
+Cada transação é exibida como um card clicável com as seguintes regiões visuais:
+
+| Região | Conteúdo |
+|---|---|
+| Coluna esquerda | Dia do mês + dia da semana abreviado |
+| Divisor vertical | Linha sutil separando data do conteúdo |
+| Ícone circular | Ícone Feather colorido por `TYPE_COLORS[type]` |
+| Bloco central | `description` em negrito + chip de categoria (ou "Sem categoria") |
+| Coluna direita | Valor formatado com sinal (+ verde / − vermelho/laranja) |
+
+O item aceita `onPress` que abre o `TransactionEditSheet`.
+
+### 11.2 TransactionEditSheet — Especificação de UI
+
+**Padrão:** Bottom sheet com `Modal` + `Animated.View`, animação spring ao abrir e timing ao fechar (mesmo padrão de `TransactionFilterSheet`).
+
+**Layout estrutural:**
+```
+┌──────────────────────────────────┐
+│  ── (drag handle)                │
+│  Editar transação          [X]   │  ← Header
+├──────────────────────────────────┤
+│  [income] [expense] [transfer]…  │  ← Type pills (scroll horizontal)
+│                                  │
+│  ┌────────────────────────────┐  │
+│  │  Descrição (TextInput)     │  │
+│  └────────────────────────────┘  │
+│                                  │
+│  [R$ 1.234,56]     [31/12/2024]  │  ← Valor + Data (TextInput)
+│                                  │
+│  [Sem cat.] [Alimentação] [...]  │  ← Category chips (scroll horizontal)
+├──────────────────────────────────┤
+│  [  Cancelar  ]  [  Salvar  ]    │  ← Footer fixo
+└──────────────────────────────────┘
+```
+
+**Campos editáveis:**
+
+| Campo | Componente | Validação |
+|---|---|---|
+| Tipo | Pills horizontais (uma selecionada) | Obrigatório |
+| Descrição | `TextInput` (linha única, autoFocus) | Não pode estar vazia |
+| Valor | `TextInput` numérico (formato BR `1.234,56`) | Deve parsear para número > 0 |
+| Data | `TextInput` com máscara `DD/MM/YYYY` | Deve ser data válida |
+| Categoria | Chips horizontais + "Sem categoria" (null) | Opcional |
+
+**Type Pills — cores e labels:**
+
+| Tipo | Label PT | Cor |
+|---|---|---|
+| `income` | Receita | Verde |
+| `expense` | Despesa | Vermelho |
+| `transfer` | Transferência | Azul |
+| `investment` | Investimento | Índigo |
+| `card_payment` | Fatura | Laranja |
+
+**TransactionPatch — contrato de atualização:**
+
+```typescript
+export interface TransactionPatch {
+    description: string;
+    amount: number;
+    type: TransactionType;
+    date: string;        // ISO YYYY-MM-DD
+    category_id: number | null;
+}
+```
+
+### 11.3 Fluxo de Edição
+
+```
+Usuário toca em TransactionItem
+    → TransactionsScreen seta editTarget = transaction
+    → TransactionEditSheet abre pré-populado com dados da transação
+
+Usuário edita campos → toca Salvar
+    → handleSaveEdit(id, patch) chamado
+    → updateTransaction(id, patch) no useTransactions
+    → supabase.from('transactions').update(patch).eq('id', id)
+    → refetch() para atualizar lista
+    → setEditTarget(null) fecha sheet
+
+Em caso de erro → Alert.alert('Erro', mensagem)
+```
+
+### 11.4 Helpers de Formato (internos ao componente)
+
+| Helper | Entrada | Saída |
+|---|---|---|
+| `isoToBR(iso)` | `"2024-12-31"` | `"31/12/2024"` |
+| `brToISO(br)` | `"31/12/2024"` | `"2024-12-31"` (null se inválido) |
+| `toInputAmount(v)` | `1234.56` | `"1.234,56"` |
+| `parseInputAmount(raw)` | `"1.234,56"` | `1234.56` (null se inválido) |
+
