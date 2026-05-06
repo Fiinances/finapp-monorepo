@@ -22,9 +22,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 interface SideMenuProps {
     visible: boolean;
     onClose: () => void;
+    currentRoute?: string;
 }
 
-export function SideMenu({ visible, onClose }: SideMenuProps) {
+export function SideMenu({ visible, onClose, currentRoute }: SideMenuProps) {
     const { user, signOut } = useAuth();
     const navigation = useNavigation<NativeStackNavigationProp<AppTabParamList>>();
     const colorScheme = useColorScheme();
@@ -200,17 +201,18 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                     <MenuItem
                         icon="home"
                         label="Dashboard"
-                        onPress={onClose}
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Dashboard'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
-                        active
+                        active={currentRoute === 'Dashboard'}
                     />
                     <MenuItem
                         icon="list"
                         label="Transações"
-                        onPress={onClose}
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Transactions'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
+                        active={currentRoute === 'Transactions'}
                     />
                     <MenuItem
                         icon="credit-card"
@@ -218,6 +220,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                         onPress={() => { onClose(); setTimeout(() => navigation.navigate('Banks'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
+                        active={currentRoute === 'Banks'}
                     />
                     <MenuItem
                         icon="repeat"
@@ -225,6 +228,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                         onPress={() => { onClose(); setTimeout(() => navigation.navigate('Installments'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
+                        active={currentRoute === 'Installments'}
                     />
                     <MenuItem
                         icon="refresh-cw"
@@ -232,6 +236,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                         onPress={() => { onClose(); setTimeout(() => navigation.navigate('Subscriptions'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
+                        active={currentRoute === 'Subscriptions'}
                     />
                 </View>
 

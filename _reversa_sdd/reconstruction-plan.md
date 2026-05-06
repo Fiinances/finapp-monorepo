@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 26 tarefas | 20 concluídas | 6 pendentes
+**Status:** 26 tarefas | 22 concluídas | 4 pendentes
 
 ---
 
@@ -157,15 +157,14 @@
 **Pronto quando:** Header do Dashboard visível abaixo da status bar em ambas as plataformas.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
-**Status:** pending
-**Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/categories.md`
-**Constrói:** `TransactionsScreen.tsx` com FlatList/SectionList + hook `useTransactions` integrado
-**Pendências identificadas:**
-- `components/transactions/TransactionList.tsx` e `TransactionItem.tsx` existem mas usam `className` (NativeWind) — incompatível com o padrão atual do projeto (inline `style` obrigatório)
-- `hooks/useTransactions.ts` existe e funcional (busca do Supabase com agrupamento mensal)
-- **Falta:** `screens/TransactionsScreen.tsx` — rota `Transactions` ainda aponta para `PlaceholderScreen`
-- Os componentes existentes **não são usados em nenhuma tela**
-**Pronto quando:** `TransactionsScreen` criada com lista agrupada por mês, dark mode via inline styles, navegável pelo SideMenu; botão hamburguer no header (padrão T17).
+**Status:** ✅ done
+**Implementado:**
+- `components/transactions/TransactionItem.tsx` — reescrito com inline styles (dark mode via `useColorScheme`)
+- `components/transactions/TransactionList.tsx` — reescrito com inline styles, SectionList agrupada por mês
+- `screens/TransactionsScreen.tsx` — criada com header (hamburguer esquerdo via `useSideMenu`), dark mode completo
+- `navigation/AppNavigator.tsx` — rota `Transactions` agora aponta para `TransactionsScreen`
+- Hook `hooks/useTransactions.ts` já existia e foi aproveitado (busca Supabase + agrupamento mensal)
+**Pronto quando:** Transações renderizadas com suporte a Dark Mode. ✅
 
 #### Tarefa 15 — Tela: Dashboard (Gráficos Mobile)
 **Status:** done
@@ -198,6 +197,17 @@
 - `contexts/SideMenuContext.tsx` — contexto criado com `isMenuOpen`, `openMenu`, `closeMenu`
 - **Refactor de navegação UX:** botão hamburguer movido para o lado **esquerdo** em todas as telas; botões de retorno (`arrow-left` / `goBack()`) removidos das sub-telas (Banks, Installments, Subscriptions) e substituídos pelo ícone `menu` que chama `openMenu()` via contexto — qualquer tela pode abrir o SideMenu independentemente
 **Pronto quando:** Fluxos de detecção portados para a UI mobile.
+
+#### Tarefa 17b — Padronização de Headers e SideMenu
+**Status:** ✅ done
+**Constrói:** Consistência visual de cabeçalhos em todas as telas; navegação funcional no SideMenu
+**Concluído:**
+- **DashboardScreen** — Header reestruturado: layout `space-between` → `row` alinhado à esquerda; hamburger de card redondo (40×40 `bgCard`) → `TouchableOpacity` simples com `padding:4, marginRight:16`; ícone `size={18}` → `size={22}`; título movido para esquerda com `flex:1`
+- **BanksScreen** — Header padronizado: removido estilo card redondo do hamburger; adicionado `borderBottomWidth:1`, `borderBottomColor:borderColor`; `paddingVertical:16` → `14`, `paddingHorizontal:20` → `16`; `marginRight:12` → `padding:4,marginRight:16`
+- **InstallmentsScreen** — Header padronizado: `paddingHorizontal:20,paddingVertical:16` → `16,14`; `marginRight:12` → `padding:4,marginRight:16`; `fontSize:20` → `18`; adicionado `borderBottomWidth:1,borderBottomColor:borderColor`
+- **SubscriptionsScreen** — Header padronizado: idem InstallmentsScreen com título "Assinaturas"
+- **TransactionsScreen** — Header ajustado: `paddingVertical:12` → `14`; `marginRight:12` → `16`; `fontWeight:'600'` → `'700'`; removido `backgroundColor:bgCard` do header
+- **SideMenu** — `useNavigationState` adicionado para rastrear rota ativa dinamicamente; `active` prop agora calculado com `currentRoute === 'RouteName'`; Dashboard e Transações agora navegam (`navigation.navigate`) em vez de apenas fechar o menu; todos os 5 itens com `active` dinâmico
 
 #### Tarefa 18 — Fluxo de Importação (Mobile)
 **Status:** pending

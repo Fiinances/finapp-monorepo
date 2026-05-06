@@ -1,11 +1,10 @@
 import React, { useCallback } from 'react';
 import {
     ActivityIndicator,
-    FlatList,
-    ListRenderItemInfo,
     SectionList,
     SectionListData,
     Text,
+    useColorScheme,
     View,
 } from 'react-native';
 
@@ -25,19 +24,37 @@ interface Props {
 type Section = SectionListData<Transaction, { title: string; summary: MonthSummary }>;
 
 function SectionHeader({ summary }: { summary: MonthSummary }) {
+    const isDark = useColorScheme() === 'dark';
     return (
-        <View className="flex-row items-center justify-between px-4 py-2 bg-[#f9fafb] dark:bg-[#0f1117]">
-            <Text className="text-xs font-semibold text-[#6b7280] dark:text-[#9ca3af] uppercase tracking-wide">
+        <View
+            style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                backgroundColor: isDark ? '#0f1117' : '#f9fafb',
+            }}
+        >
+            <Text
+                style={{
+                    fontSize: 11,
+                    fontWeight: '600',
+                    color: isDark ? '#9ca3af' : '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                }}
+            >
                 {summary.monthYear}
             </Text>
-            <View className="flex-row gap-3">
+            <View style={{ flexDirection: 'row', gap: 12 }}>
                 {summary.income > 0 && (
-                    <Text className="text-xs font-medium text-[#22c55e]">
+                    <Text style={{ fontSize: 11, fontWeight: '500', color: '#22c55e' }}>
                         +{formatCurrency(summary.income)}
                     </Text>
                 )}
                 {summary.expense > 0 && (
-                    <Text className="text-xs font-medium text-[#ef4444]">
+                    <Text style={{ fontSize: 11, fontWeight: '500', color: '#ef4444' }}>
                         -{formatCurrency(summary.expense)}
                     </Text>
                 )}
@@ -47,7 +64,16 @@ function SectionHeader({ summary }: { summary: MonthSummary }) {
 }
 
 function Separator() {
-    return <View className="h-px bg-[#f3f4f6] dark:bg-[#374151] mx-4" />;
+    const isDark = useColorScheme() === 'dark';
+    return (
+        <View
+            style={{
+                height: 1,
+                backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                marginHorizontal: 16,
+            }}
+        />
+    );
 }
 
 export function TransactionList({
@@ -58,6 +84,8 @@ export function TransactionList({
     refreshing = false,
     ListEmptyComponent,
 }: Props) {
+    const isDark = useColorScheme() === 'dark';
+
     const sections: Section[] = buildSummaries(transactions).map((summary) => ({
         title: summary.monthYear,
         summary,
@@ -65,7 +93,7 @@ export function TransactionList({
     }));
 
     const renderItem = useCallback(
-        ({ item }: ListRenderItemInfo<Transaction>) => (
+        ({ item }: { item: Transaction }) => (
             <TransactionItem transaction={item} onPress={onPressItem} />
         ),
         [onPressItem],
@@ -80,8 +108,8 @@ export function TransactionList({
 
     if (loading && transactions.length === 0) {
         return (
-            <View className="flex-1 items-center justify-center">
-                <ActivityIndicator size="large" color="#1a1f2e" />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="large" color="#6366f1" />
             </View>
         );
     }
@@ -98,8 +126,8 @@ export function TransactionList({
             refreshing={refreshing}
             ListEmptyComponent={
                 ListEmptyComponent ?? (
-                    <View className="flex-1 items-center justify-center py-16">
-                        <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 64 }}>
+                        <Text style={{ fontSize: 14, color: isDark ? '#9ca3af' : '#6b7280' }}>
                             Nenhuma transação encontrada.
                         </Text>
                     </View>

@@ -319,25 +319,19 @@ export function BanksScreen() {
                     style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
                         paddingHorizontal: 16,
-                        paddingTop: 8,
-                        paddingBottom: 14,
+                        paddingVertical: 14,
                     }}
                 >
                     <TouchableOpacity
                         onPress={openMenu}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        style={{
-                            width: 38, height: 38, borderRadius: 19,
-                            backgroundColor: bgCard,
-                            alignItems: 'center', justifyContent: 'center',
-                        }}
+                        style={{ padding: 4, marginRight: 16 }}
                     >
-                        <Feather name="menu" size={18} color={textColor} />
+                        <Feather name="menu" size={22} color={textColor} />
                     </TouchableOpacity>
 
-                    <Text style={{ color: textColor, fontSize: 18, fontWeight: '700' }}>
+                    <Text style={{ color: textColor, fontSize: 18, fontWeight: '700', flex: 1 }}>
                         Bancos e Cartões
                     </Text>
 
@@ -351,7 +345,7 @@ export function BanksScreen() {
                                 alignItems: 'center', justifyContent: 'center',
                             }}
                         >
-                            <Feather name="plus" size={18} color="#fff" />
+                            <Feather name="plus" size={20} color="#fff" />
                         </TouchableOpacity>
                     ) : (
                         <View style={{ width: 38 }} />

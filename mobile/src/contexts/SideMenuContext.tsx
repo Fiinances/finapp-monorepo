@@ -8,8 +8,8 @@ interface SideMenuContextType {
 
 const SideMenuContext = createContext<SideMenuContextType>({
     isMenuOpen: false,
-    openMenu: () => {},
-    closeMenu: () => {},
+    openMenu: () => { },
+    closeMenu: () => { },
 });
 
 export function SideMenuProvider({ children }: { children: React.ReactNode }) {

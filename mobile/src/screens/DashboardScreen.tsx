@@ -23,6 +23,7 @@ export function DashboardScreen() {
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
     const bgCard = isDark ? '#1a1f2e' : '#ffffff';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
+    const borderColor = isDark ? '#2d3550' : '#e5e7eb';
 
     const { openMenu } = useSideMenu();
 
@@ -71,7 +72,7 @@ export function DashboardScreen() {
         <View style={{ flex: 1, backgroundColor: bg }}>
             <SafeAreaView style={{ flex: 1 }}>
                 <ScrollView
-                    contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
                     refreshControl={
                         <RefreshControl
                             refreshing={loading}
@@ -84,35 +85,23 @@ export function DashboardScreen() {
                     <View
                         style={{
                             flexDirection: 'row',
-                            alignItems: 'flex-start',
-                            justifyContent: 'space-between',
-                            marginBottom: 20,
+                            alignItems: 'center', paddingVertical: 14,
                         }}
                     >
                         <TouchableOpacity
                             onPress={openMenu}
                             activeOpacity={0.7}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                backgroundColor: bgCard,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                shadowColor: '#000',
-                                shadowOpacity: 0.06,
-                                shadowRadius: 4,
-                                elevation: 2,
-                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ padding: 4, marginRight: 16 }}
                         >
-                            <Feather name="menu" size={20} color={textColor} />
+                            <Feather name="menu" size={22} color={textColor} />
                         </TouchableOpacity>
 
-                        <View>
-                            <Text style={{ color: textColor, fontSize: 22, fontWeight: '700', marginBottom: 4 }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: textColor, fontSize: 18, fontWeight: '700' }}>
                                 Dashboard
                             </Text>
-                            <Text style={{ color: labelColor, fontSize: 14 }}>
+                            <Text style={{ color: labelColor, fontSize: 13, marginTop: 2 }}>
                                 {monthLabel(displayMonth)}
                             </Text>
                         </View>

@@ -413,17 +413,17 @@ export function SubscriptionsScreen() {
                 <View
                     style={{
                         flexDirection: 'row', alignItems: 'center',
-                        paddingHorizontal: 20, paddingVertical: 16,
+                        paddingHorizontal: 16, paddingVertical: 14
                     }}
                 >
                     <TouchableOpacity
                         onPress={openMenu}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        style={{ marginRight: 12 }}
+                        style={{ padding: 4, marginRight: 16 }}
                     >
                         <Feather name="menu" size={22} color={textColor} />
                     </TouchableOpacity>
-                    <Text style={{ color: textColor, fontSize: 20, fontWeight: '700', flex: 1 }}>
+                    <Text style={{ color: textColor, fontSize: 18, fontWeight: '700', flex: 1 }}>
                         Assinaturas
                     </Text>
                     <TouchableOpacity
@@ -744,7 +744,7 @@ export function SubscriptionsScreen() {
                                     ? <ActivityIndicator color="#fff" />
                                     : <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>
                                         {editing ? 'Salvar alterações' : 'Cadastrar assinatura'}
-                                      </Text>
+                                    </Text>
                                 }
                             </TouchableOpacity>
                         </ScrollView>

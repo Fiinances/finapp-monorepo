@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useColorScheme, View } from 'react-native';
 
 import { Transaction } from '@/types';
 import {
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function TransactionItem({ transaction, onPress }: Props) {
+    const isDark = useColorScheme() === 'dark';
     const { type, description, amount, date, category } = transaction;
     const color = TYPE_COLORS[type].light;
     const sign = TYPE_SIGN[type];
@@ -22,39 +23,63 @@ export function TransactionItem({ transaction, onPress }: Props) {
     return (
         <Pressable
             onPress={() => onPress?.(transaction)}
-            className="flex-row items-center px-4 py-3 bg-white dark:bg-[#1a1f2e] active:opacity-70"
+            style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: isDark ? '#1a1f2e' : '#ffffff',
+                opacity: pressed ? 0.7 : 1,
+            })}
         >
             {/* Indicador de tipo */}
             <View
-                className="w-10 h-10 rounded-full items-center justify-center mr-3 shrink-0"
-                style={{ backgroundColor: `${color}22` }}
+                style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12,
+                    backgroundColor: `${color}22`,
+                }}
             >
                 <View
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: color }}
+                    style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: 6,
+                        backgroundColor: color,
+                    }}
                 />
             </View>
 
             {/* Descrição + categoria */}
-            <View className="flex-1 mr-2">
+            <View style={{ flex: 1, marginRight: 8 }}>
                 <Text
                     numberOfLines={1}
-                    className="text-sm font-medium text-[#1a1f2e] dark:text-[#f8f9fc]"
+                    style={{
+                        fontSize: 14,
+                        fontWeight: '500',
+                        color: isDark ? '#f8f9fc' : '#1a1f2e',
+                    }}
                 >
                     {description}
                 </Text>
-                <Text className="text-xs text-[#6b7280] dark:text-[#9ca3af] mt-0.5">
+                <Text
+                    style={{
+                        fontSize: 12,
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        marginTop: 2,
+                    }}
+                >
                     {category?.name ?? '—'} · {formatDate(date)}
                 </Text>
             </View>
 
             {/* Valor */}
-            <Text
-                className="text-sm font-semibold"
-                style={{ color }}
-            >
-                {sign}
-                {formatCurrency(Math.abs(amount))}
+            <Text style={{ fontSize: 14, fontWeight: '600', color }}>
+                {sign}{formatCurrency(Math.abs(amount))}
             </Text>
         </Pressable>
     );
