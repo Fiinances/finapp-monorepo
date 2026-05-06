@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, useColorScheme } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, ScrollView, Pressable, useColorScheme } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { MonthlyBarData } from '@/hooks/useDashboard';
 import { formatCurrency } from '@/utils/transactions';
@@ -11,7 +11,6 @@ interface Props {
 const INCOME_COLOR = '#22c55e';
 const EXPENSE_COLOR = '#ef4444';
 const INVEST_COLOR = '#f59e0b';
-const NET_COLOR = '#6366f1';
 
 export function MonthlyChart({ data }: Props) {
     const colorScheme = useColorScheme();
@@ -22,10 +21,17 @@ export function MonthlyChart({ data }: Props) {
 
     if (!data.length) return null;
 
-    // gifted-charts BarChart expects grouped bars via `stackData`
+    const scrollRef = useRef<ScrollView>(null);
+    const [selected, setSelected] = useState<{ label: string; value: number; color: string } | null>(null);
+
+    const MONTH_ABBR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    // gifted-charts BarChart expects grouped bars via a flat array with spacing
     // We build a grouped bar: [income, expense, investment] per month
     const barData = data.flatMap((item) => {
-        const label = item.monthYear.slice(0, 2); // e.g. "01"
+
+        const monthIdx = parseInt(item.monthYear.slice(0, 2), 10) - 1;
+        const label = MONTH_ABBR[monthIdx] ?? item.monthYear.slice(0, 2);
         return [
             {
                 value: item.income,
@@ -33,29 +39,28 @@ export function MonthlyChart({ data }: Props) {
                 frontColor: INCOME_COLOR,
                 spacing: 2,
                 labelTextStyle: { color: labelColor, fontSize: 9 },
+                onPress: () => setSelected({ label: `${label} · Receita`, value: item.income, color: INCOME_COLOR }),
             },
             {
                 value: item.expense,
                 frontColor: EXPENSE_COLOR,
                 spacing: 2,
+                onPress: () => setSelected({ label: `${label} · Despesa`, value: item.expense, color: EXPENSE_COLOR }),
             },
             {
                 value: item.investment,
                 frontColor: INVEST_COLOR,
                 spacing: 16,
+                onPress: () => setSelected({ label: `${label} · Investimento`, value: item.investment, color: INVEST_COLOR }),
             },
         ];
     });
-
-    // Net line via lineData (gifted-charts supports lineData overlay)
-    const lineData = data.map((item) => ({ value: item.net }));
 
     // Legend
     const legend = [
         { color: INCOME_COLOR, label: 'Receita' },
         { color: EXPENSE_COLOR, label: 'Despesa' },
         { color: INVEST_COLOR, label: 'Investimento' },
-        { color: NET_COLOR, label: 'Saldo' },
     ];
 
     return (
@@ -92,41 +97,62 @@ export function MonthlyChart({ data }: Props) {
                     </View>
                 ))}
             </View>
+            <Pressable onPress={() => setSelected(null)}>
+                <View style={{ position: 'relative' }}>
+                    <ScrollView
+                        ref={scrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+                    >
+                        <BarChart
+                            data={barData}
+                            width={data.length * 100}
+                            height={200}
+                            barWidth={24}
+                            barBorderRadius={4}
+                            noOfSections={4}
+                            initialSpacing={8}
+                            yAxisTextStyle={{ color: labelColor, fontSize: 9 }}
+                            xAxisLabelTextStyle={{ color: labelColor, fontSize: 9 }}
+                            rulesColor={isDark ? '#374151' : '#e5e7eb'}
+                            yAxisColor={isDark ? '#374151' : '#e5e7eb'}
+                            xAxisColor={isDark ? '#374151' : '#e5e7eb'}
+                        />
+                    </ScrollView>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <BarChart
-                    data={barData}
-                    lineData={lineData}
-                    lineDataSet={[{ dataPointsColor: NET_COLOR, color: NET_COLOR, thickness: 2 }]}
-                    showLine
-                    lineConfig={{ color: NET_COLOR, thickness: 2, dataPointsRadius: 3, dataPointsColor: NET_COLOR }}
-                    width={data.length * 56}
-                    barWidth={12}
-                    barBorderRadius={4}
-                    noOfSections={4}
-                    yAxisTextStyle={{ color: labelColor, fontSize: 9 }}
-                    xAxisLabelTextStyle={{ color: labelColor, fontSize: 9 }}
-                    rulesColor={isDark ? '#374151' : '#e5e7eb'}
-                    yAxisColor={isDark ? '#374151' : '#e5e7eb'}
-                    xAxisColor={isDark ? '#374151' : '#e5e7eb'}
-                    backgroundColor={bgCard}
-                    isAnimated
-                    animationDuration={400}
-                    renderTooltip={(item: { value: number }) => (
+                    {selected && (
                         <View
+                            pointerEvents="none"
                             style={{
-                                backgroundColor: isDark ? '#374151' : '#f9fafb',
-                                padding: 4,
-                                borderRadius: 4,
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
                             }}
                         >
-                            <Text style={{ color: textColor, fontSize: 11 }}>
-                                {formatCurrency(item.value)}
-                            </Text>
+                            <View
+                                style={{
+                                    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                                    borderRadius: 8,
+                                    paddingVertical: 6,
+                                    paddingHorizontal: 10,
+                                    borderLeftWidth: 3,
+                                    borderLeftColor: selected.color,
+                                    shadowColor: '#000',
+                                    shadowOpacity: 0.15,
+                                    shadowRadius: 6,
+                                    elevation: 6,
+                                }}
+                            >
+                                <Text style={{ color: labelColor, fontSize: 10, marginBottom: 2 }}>{selected.label}</Text>
+                                <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
+                                    {formatCurrency(selected.value)}
+                                </Text>
+                            </View>
                         </View>
                     )}
-                />
-            </ScrollView>
+                </View>
+            </Pressable>
         </View>
     );
 }
