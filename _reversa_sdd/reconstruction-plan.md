@@ -312,6 +312,21 @@
 
 ---
 
+#### Tarefa 18-K — Tela: Gestão de Categorias
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/categories.md`
+**Constrói:** `CategoriesScreen.tsx` + `useCategories.ts` hook + criação inline em `TransactionCreateSheet` e `ImportScreen`
+**Concluído:**
+- **`useCategories.ts`** — hook CRUD sobre `transaction_categories` via Supabase; `createCategory` inclui `user_id` obrigatório (RLS)
+- **`CategoriesScreen.tsx`** — tela dedicada com FlatList de categorias, bottom sheet para criação/edição (nome, paleta de cores, tipo), confirmação de exclusão via Alert
+- **Navegação** — rota `Categories` registrada em `AppTabParamList`, `AppNavigator.tsx` e MenuItem no `SideMenu` (ícone `tag`)
+- **Inline em `TransactionCreateSheet`** — prop `onCreateCategory` opcional; chip dashed "Nova" abre overlay com TextInput; `TransactionsScreen` passa `onCreateCategory={async (name) => createCategory({ name })}`
+- **Inline em `ImportScreen`** — `useCategories` chamado no ImportScreen; `PreviewRow` exibe chip de categoria com ícone `tag`; Modal de seleção de categoria com opção "Sem categoria", lista e criação inline de nova categoria
+- **`TransactionsScreen`** — substituída derivação `useMemo` de categorias pelo `useCategories()` direto
+**Pronto quando:** Usuário pode criar/editar/excluir categorias na tela dedicada; pode criar categoria inline no formulário de transação e no fluxo de importação; lista de categorias carregada diretamente do Supabase.
+
+---
+
 ### Fase 4: Testes e Validação E2E
 
 #### Tarefa 19 — Testes Automatizados: Frontend

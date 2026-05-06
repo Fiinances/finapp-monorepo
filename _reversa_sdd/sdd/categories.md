@@ -309,3 +309,62 @@ Então: String(BigInt(42)) = "42" → ok
 | `react-redux` | npm | `useSelector`, `useDispatch` no TxRow |
 | `app/store.tsx` | interno | RootState e configuração do store Redux |
 | `components/ui/combobox` | interno | Seletor com criação inline |
+
+---
+
+## 15. Implementação Mobile (React Native)
+
+> Adicionado em 2026-05-02 — implementação completa no app mobile Expo/Supabase.
+
+### 15.1 Hook `useCategories` (`mobile/src/hooks/useCategories.ts`)
+
+CRUD completo sobre a tabela `transaction_categories` via Supabase direto:
+
+| Operação | Método | Detalhe |
+|---|---|---|
+| Listar | `loadAll()` | `.select('*').order('name')` |
+| Criar | `createCategory(data)` | INSERT com `user_id: user.id` via `supabase.auth.getUser()` |
+| Atualizar | `updateCategory(id, patch)` | UPDATE `.eq('id', id)` |
+| Deletar | `deleteCategory(id)` | DELETE `.eq('id', id)` |
+
+Interface exportada:
+```typescript
+export interface CategoryCreate {
+    name: string; color?: string | null; icon?: string | null;
+    type?: string | null; parent_id?: number | null;
+}
+interface UseCategoriesResult {
+    categories: Category[]; loading: boolean; error: string | null;
+    refetch, createCategory, updateCategory, deleteCategory;
+}
+```
+
+### 15.2 Tela de Gestão (`mobile/src/screens/CategoriesScreen.tsx`)
+
+- `AppHeader` com hambúrguer (esquerda) + ícone `plus` (direita) → abre bottom sheet
+- `FlatList`: dot de cor + nome + badge de tipo + chevron
+- Estado vazio: ícone `tag` + mensagem
+- Bottom sheet: Modal + Animated.View + PanResponder (padrão SHEET_H = SCREEN_H * 0.92)
+- Formulário: nome, paleta de 8 cores, chips de tipo (receita/despesa/investimento)
+- Confirmação de exclusão via `Alert.alert`
+
+### 15.3 Criação inline em `TransactionCreateSheet`
+
+Chip dashed "Nova" após a lista de categorias → overlay absoluto com TextInput.
+Prop `onCreateCategory?: (name: string) => Promise<Category>` opcional.
+`TransactionsScreen` passa `onCreateCategory={async (name) => createCategory({ name })}`.
+
+### 15.4 Seletor de categoria em `ImportScreen` (fluxo de importação)
+
+- `useCategories` chamado em `ImportScreen`; `categories` e `createCategory` descidos para `PreviewStep`
+- Cada linha `PreviewRow` exibe chip dashed com ícone `tag` e nome da categoria (ou "Sem categoria")
+- Tap no chip abre Modal de seleção: lista de categorias + opção "Sem categoria" + "Nova categoria" com TextInput inline
+- `onSelectCategory(key, catId)` → `updateRow(key, { category_id: catId })`
+- Criação de nova categoria diretamente no modal sem sair do fluxo de importação
+
+### 15.5 Navegação
+
+- Rota `Categories` adicionada a `AppTabParamList` (`navigation/types.ts`)
+- `Stack.Screen name="Categories"` registrado em `AppNavigator.tsx`
+- MenuItem "Categorias" (ícone `tag`) adicionado ao `SideMenu` entre "Importar Extrato" e os demais ítens
+

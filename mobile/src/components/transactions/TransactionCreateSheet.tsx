@@ -2,6 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
     Dimensions,
     Keyboard,
@@ -41,6 +42,7 @@ interface Props {
     saving?: boolean;
     onSave: (data: TransactionCreate) => Promise<void>;
     onClose: () => void;
+    onCreateCategory?: (name: string) => Promise<Category>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -92,6 +94,7 @@ export function TransactionCreateSheet({
     saving = false,
     onSave,
     onClose,
+    onCreateCategory,
 }: Props) {
     const isDark = useColorScheme() === 'dark';
 
@@ -115,6 +118,12 @@ export function TransactionCreateSheet({
     const [accountId, setAccountId] = useState<number | null>(null);
     const [creditCardId, setCreditCardId] = useState<number | null>(null);
     const [errors, setErrors] = useState<Partial<Record<'description' | 'amount' | 'link', string>>>({});
+
+    // Inline category creation
+    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [createCatError, setCreateCatError] = useState('');
+    const [creatingCat, setCreatingCat] = useState(false);
 
     const slideAnim = useRef(new Animated.Value(SHEET_H)).current;
 
@@ -161,6 +170,9 @@ export function TransactionCreateSheet({
             setAccountId(null);
             setCreditCardId(null);
             setErrors({});
+            setShowNewCategoryInput(false);
+            setNewCatName('');
+            setCreateCatError('');
         }
     }, [visible]);
 
@@ -187,6 +199,24 @@ export function TransactionCreateSheet({
         if (linkType !== 'account') setAccountId(null);
         if (linkType !== 'card') setCreditCardId(null);
     }, [linkType]);
+
+    async function handleCreateCategoryInline() {
+        const name = newCatName.trim();
+        if (!name) { setCreateCatError('Informe um nome.'); return; }
+        if (!onCreateCategory) return;
+        setCreatingCat(true);
+        setCreateCatError('');
+        try {
+            const created = await onCreateCategory(name);
+            setCategoryId(created.id);
+            setShowNewCategoryInput(false);
+            setNewCatName('');
+        } catch (e) {
+            setCreateCatError(e instanceof Error ? e.message : 'Erro ao criar categoria.');
+        } finally {
+            setCreatingCat(false);
+        }
+    }
 
     async function handleSave() {
         const errs: typeof errors = {};
@@ -454,6 +484,26 @@ export function TransactionCreateSheet({
                                     </TouchableOpacity>
                                 );
                             })}
+                            {onCreateCategory && (
+                                <TouchableOpacity
+                                    onPress={() => { setShowNewCategoryInput(true); setNewCatName(''); setCreateCatError(''); }}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 8,
+                                        borderRadius: 20,
+                                        backgroundColor: bgInput,
+                                        borderWidth: 1.5,
+                                        borderColor: isDark ? '#374151' : '#d1d5db',
+                                        borderStyle: 'dashed',
+                                    }}
+                                >
+                                    <Feather name="plus" size={13} color={labelColor} />
+                                    <Text style={{ fontSize: 13, fontWeight: '600', color: labelColor }}>Nova</Text>
+                                </TouchableOpacity>
+                            )}
                         </ScrollView>
 
                         {/* ── Vínculo (conta / cartão) ── */}
@@ -692,6 +742,58 @@ export function TransactionCreateSheet({
                             </Text>
                         </TouchableOpacity>
                     </View>
+                    {showNewCategoryInput && (
+                        <View style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center',
+                            alignItems: 'center', zIndex: 99, borderRadius: 24,
+                        }}>
+                            <View style={{ backgroundColor: bgSheet, borderRadius: 16, padding: 20, width: '85%', gap: 12 }}>
+                                <Text style={{ color: textColor, fontSize: 16, fontWeight: '700' }}>Nova categoria</Text>
+                                <TextInput
+                                    value={newCatName}
+                                    onChangeText={setNewCatName}
+                                    autoFocus
+                                    placeholder="Nome da categoria"
+                                    placeholderTextColor={labelColor}
+                                    style={{
+                                        backgroundColor: bgInput,
+                                        borderRadius: 10,
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 12,
+                                        fontSize: 15,
+                                        color: textColor,
+                                    }}
+                                />
+                                {!!createCatError && (
+                                    <Text style={{ color: '#ef4444', fontSize: 12 }}>{createCatError}</Text>
+                                )}
+                                <View style={{ flexDirection: 'row', gap: 10 }}>
+                                    <TouchableOpacity
+                                        onPress={() => { setShowNewCategoryInput(false); setNewCatName(''); setCreateCatError(''); }}
+                                        style={{
+                                            flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center',
+                                            backgroundColor: bgInput,
+                                        }}
+                                    >
+                                        <Text style={{ color: textColor, fontWeight: '600', fontSize: 15 }}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={handleCreateCategoryInline}
+                                        disabled={creatingCat}
+                                        style={{
+                                            flex: 1, borderRadius: 10, paddingVertical: 11, alignItems: 'center',
+                                            backgroundColor: accent, opacity: creatingCat ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {creatingCat
+                                            ? <ActivityIndicator size="small" color="#fff" />
+                                            : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Criar</Text>}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    )}
                 </Animated.View>
             </KeyboardAvoidingView>
         </Modal>

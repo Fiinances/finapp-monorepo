@@ -246,6 +246,14 @@ export function SideMenu({ visible, onClose, currentRoute }: SideMenuProps) {
                         bgActive={bgItemActive}
                         active={currentRoute === 'Import'}
                     />
+                    <MenuItem
+                        icon="tag"
+                        label="Categorias"
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Categories'), 250); }}
+                        textPrimary={textPrimary}
+                        bgActive={bgItemActive}
+                        active={currentRoute === 'Categories'}
+                    />
                 </View>
 
                 {/* ── Logout ── */}

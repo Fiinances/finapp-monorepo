@@ -28,8 +28,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSideMenu } from '@/contexts/SideMenuContext';
+import { useCategories } from '@/hooks/useCategories';
 import { supabase } from '@/lib/supabase';
-import type { BankAccount, CreditCard, TransactionType } from '@/types';
+import type { BankAccount, Category, CreditCard, TransactionType } from '@/types';
 import { AppHeader } from '@/components/ui';
 import {
     inferBillingMonth,
@@ -121,10 +122,7 @@ export function ImportScreen() {
     const [billingMonth, setBillingMonth] = useState(currentMonthYear());
 
     // Category picker modal state
-    const [categoryModal, setCategoryModal] = useState<{ visible: boolean; rowKey: string | null }>({
-        visible: false,
-        rowKey: null,
-    });
+    const { categories, createCategory } = useCategories();
 
     // Pre-fetched map of external_id → { category_id } for existing transactions
     const [existingTxMap, setExistingTxMap] = useState<Map<string, { category_id: number | null }>>(new Map());
@@ -416,6 +414,9 @@ export function ImportScreen() {
                     onUpdateDesc={(key, desc) => updateRow(key, { description: desc })}
                     onRemoveRow={removeRow}
                     onConfirm={handleConfirm}
+                    categories={categories}
+                    onSelectCategory={(key, catId) => updateRow(key, { category_id: catId })}
+                    onCreateCategory={async (name) => createCategory({ name })}
                 />
             }
         </SafeAreaView>
@@ -616,15 +617,41 @@ interface PreviewStepProps {
     onUpdateDesc: (key: string, desc: string) => void;
     onRemoveRow: (key: string) => void;
     onConfirm: () => void;
+    categories: Category[];
+    onSelectCategory: (key: string, catId: number | null) => void;
+    onCreateCategory: (name: string) => Promise<Category>;
 }
 
 function PreviewStep({
     isDark, bg, cardBg, textPrimary, textMuted, borderColor, inputBg,
     rows, accounts, creditCards, accountId, billingMonth, isCard, saving,
     onSelectAccount, onBillingMonthChange, onCycleType, onUpdateDesc, onRemoveRow, onConfirm,
+    categories, onSelectCategory, onCreateCategory,
 }: PreviewStepProps) {
 
     const [destinationModal, setDestinationModal] = useState(false);
+    const [categoryPickerRow, setCategoryPickerRow] = useState<string | null>(null);
+    const [newCatName, setNewCatName] = useState('');
+    const [creatingCat, setCreatingCat] = useState(false);
+    const [createCatError, setCreateCatError] = useState('');
+    const [showNewCatInput, setShowNewCatInput] = useState(false);
+
+    const handleCreateCategory = async () => {
+        if (!newCatName.trim()) { setCreateCatError('Nome obrigatório'); return; }
+        setCreatingCat(true);
+        try {
+            const cat = await onCreateCategory(newCatName.trim());
+            if (categoryPickerRow) onSelectCategory(categoryPickerRow, cat.id);
+            setCategoryPickerRow(null);
+            setNewCatName('');
+            setShowNewCatInput(false);
+            setCreateCatError('');
+        } catch {
+            setCreateCatError('Erro ao criar categoria');
+        } finally {
+            setCreatingCat(false);
+        }
+    };
 
     const selectedLabel = (() => {
         if (!accountId) return 'Selecionar destino';
@@ -754,9 +781,91 @@ function PreviewStep({
                         onCycleType={() => onCycleType(item._key, item.type)}
                         onUpdateDesc={desc => onUpdateDesc(item._key, desc)}
                         onRemove={() => onRemoveRow(item._key)}
+                        categoryName={categories.find(c => c.id === item.category_id)?.name ?? null}
+                        onPressCategory={() => setCategoryPickerRow(item._key)}
                     />
                 )}
             />
+
+            {/* Category picker modal */}
+            <Modal
+                visible={categoryPickerRow !== null}
+                transparent
+                animationType="fade"
+                onRequestClose={() => { setCategoryPickerRow(null); setShowNewCatInput(false); setNewCatName(''); setCreateCatError(''); }}
+            >
+                <Pressable
+                    style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+                    onPress={() => { setCategoryPickerRow(null); setShowNewCatInput(false); setNewCatName(''); setCreateCatError(''); }}
+                >
+                    <Pressable
+                        style={{ backgroundColor: cardBg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: Math.max(insets.bottom + 12, 24) }}
+                        onPress={() => { }}
+                    >
+                        <Text style={{ color: textPrimary, fontWeight: '700', fontSize: 16, marginBottom: 16 }}>Categoria</Text>
+                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                            {/* No category option */}
+                            <TouchableOpacity
+                                onPress={() => { if (categoryPickerRow) onSelectCategory(categoryPickerRow, null); setCategoryPickerRow(null); }}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: borderColor }}
+                            >
+                                <Feather name="x-circle" size={16} color={textMuted} />
+                                <Text style={{ color: textMuted, fontSize: 14 }}>Sem categoria</Text>
+                            </TouchableOpacity>
+                            {categories.map(cat => (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    onPress={() => { if (categoryPickerRow) onSelectCategory(categoryPickerRow, cat.id); setCategoryPickerRow(null); }}
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: borderColor }}
+                                >
+                                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: cat.color ?? '#9ca3af' }} />
+                                    <Text style={{ color: textPrimary, fontSize: 14 }}>{cat.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                        {/* New category */}
+                        {!showNewCatInput ? (
+                            <TouchableOpacity
+                                onPress={() => setShowNewCatInput(true)}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}
+                            >
+                                <Feather name="plus-circle" size={16} color="#6366f1" />
+                                <Text style={{ color: '#6366f1', fontSize: 14, fontWeight: '600' }}>Nova categoria</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={{ marginTop: 12, gap: 8 }}>
+                                <TextInput
+                                    value={newCatName}
+                                    onChangeText={text => { setNewCatName(text); setCreateCatError(''); }}
+                                    placeholder="Nome da categoria"
+                                    placeholderTextColor={textMuted}
+                                    style={{ backgroundColor: inputBg, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, color: textPrimary, borderWidth: 1, borderColor: createCatError ? '#ef4444' : borderColor }}
+                                    autoFocus
+                                />
+                                {!!createCatError && <Text style={{ color: '#ef4444', fontSize: 12 }}>{createCatError}</Text>}
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    <TouchableOpacity
+                                        onPress={() => { setShowNewCatInput(false); setNewCatName(''); setCreateCatError(''); }}
+                                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor, alignItems: 'center' }}
+                                    >
+                                        <Text style={{ color: textMuted }}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={handleCreateCategory}
+                                        disabled={creatingCat}
+                                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#6366f1', alignItems: 'center' }}
+                                    >
+                                        {creatingCat
+                                            ? <ActivityIndicator size="small" color="#fff" />
+                                            : <Text style={{ color: '#fff', fontWeight: '600' }}>Criar</Text>
+                                        }
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+                    </Pressable>
+                </Pressable>
+            </Modal>
 
             {/* Confirm button (floating) */}
             <View
@@ -927,11 +1036,13 @@ interface PreviewRowProps {
     onCycleType: () => void;
     onUpdateDesc: (desc: string) => void;
     onRemove: () => void;
+    categoryName?: string | null;
+    onPressCategory?: () => void;
 }
 
 function PreviewRow({
     row, isDark, cardBg, textPrimary, textMuted, borderColor, inputBg,
-    onCycleType, onUpdateDesc, onRemove,
+    onCycleType, onUpdateDesc, onRemove, categoryName, onPressCategory,
 }: PreviewRowProps) {
     const color = TYPE_COLORS[row.type];
     const label = TYPE_LABELS[row.type];
@@ -1005,6 +1116,29 @@ function PreviewRow({
                     {row.type === 'income' ? '+' : '-'} {fmtCurrency(row.amount)}
                 </Text>
             </View>
+
+            {/* Row: category */}
+            <TouchableOpacity
+                onPress={onPressCategory}
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    alignSelf: 'flex-start',
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                    borderColor: categoryName ? '#6366f1' : borderColor,
+                    backgroundColor: categoryName ? (isDark ? '#1e1b4b' : '#eef2ff') : 'transparent',
+                }}
+            >
+                <Feather name="tag" size={11} color={categoryName ? '#6366f1' : textMuted} />
+                <Text style={{ fontSize: 11, color: categoryName ? '#6366f1' : textMuted }}>
+                    {categoryName ?? 'Sem categoria'}
+                </Text>
+            </TouchableOpacity>
         </View>
     );
 }

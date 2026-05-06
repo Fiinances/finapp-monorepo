@@ -14,6 +14,7 @@ import type { TransactionCreate } from '@/components/transactions';
 import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { useBanks } from '@/hooks/useBanks';
+import { useCategories } from '@/hooks/useCategories';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Category, Transaction } from '@/types';
@@ -43,16 +44,7 @@ export function TransactionsScreen() {
 
     const { transactions: allTransactions, loading, refetch, updateTransaction, deleteTransaction, createTransaction } = useTransactions();
     const { accounts, creditCards } = useBanks();
-
-    const categories = useMemo<Category[]>(() => {
-        const map = new Map<number, Category>();
-        for (const t of allTransactions) {
-            if (t.category && t.category_id != null) {
-                map.set(t.category_id, t.category);
-            }
-        }
-        return Array.from(map.values());
-    }, [allTransactions]);
+    const { categories, createCategory } = useCategories();
 
     const transactions = useMemo(() => {
         return allTransactions.filter((t) => {
@@ -222,6 +214,7 @@ export function TransactionsScreen() {
                 saving={createSaving}
                 onSave={handleSaveCreate}
                 onClose={() => setCreateVisible(false)}
+                onCreateCategory={async (name) => createCategory({ name })}
             />
         </SafeAreaView>
     );
