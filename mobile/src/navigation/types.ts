@@ -10,4 +10,5 @@ export type AppTabParamList = {
     More: undefined;
     Installments: undefined;
     Subscriptions: undefined;
+    Import: undefined;
 };

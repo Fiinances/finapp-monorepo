@@ -238,6 +238,14 @@ export function SideMenu({ visible, onClose, currentRoute }: SideMenuProps) {
                         bgActive={bgItemActive}
                         active={currentRoute === 'Subscriptions'}
                     />
+                    <MenuItem
+                        icon="upload-cloud"
+                        label="Importar Extrato"
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Import'), 250); }}
+                        textPrimary={textPrimary}
+                        bgActive={bgItemActive}
+                        active={currentRoute === 'Import'}
+                    />
                 </View>
 
                 {/* ── Logout ── */}

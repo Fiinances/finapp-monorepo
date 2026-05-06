@@ -8,7 +8,7 @@ module.exports = {
         './components/**/*.{ts,tsx}',
         './app/**/*.{ts,tsx}',
     ],
-    darkMode: 'class',
+    darkMode: 'media',
     presets: [require('nativewind/preset')],
     theme: {
         extend: {
@@ -51,4 +51,5 @@ module.exports = {
         },
     },
     plugins: [],
+    blocklist: ['[-3:BRT]'],
 };

@@ -19,8 +19,6 @@ export function TransactionsScreen() {
 
     const bg = isDark ? '#0f1117' : '#f5f6f8';
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
-    const borderColor = isDark ? '#2d3550' : '#e5e7eb';
-    const bgCard = isDark ? '#1a1f2e' : '#ffffff';
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
@@ -30,7 +28,7 @@ export function TransactionsScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingHorizontal: 16,
-                    paddingVertical: 14
+                    paddingVertical: 18
                 }}
             >
                 <TouchableOpacity

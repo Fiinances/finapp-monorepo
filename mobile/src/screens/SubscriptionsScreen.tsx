@@ -413,7 +413,7 @@ export function SubscriptionsScreen() {
                 <View
                     style={{
                         flexDirection: 'row', alignItems: 'center',
-                        paddingHorizontal: 16, paddingVertical: 14
+                        paddingHorizontal: 20, paddingVertical: 16
                     }}
                 >
                     <TouchableOpacity

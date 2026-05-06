@@ -10,6 +10,7 @@ import { BanksScreen } from '@/screens/BanksScreen';
 import { InstallmentsScreen } from '@/screens/InstallmentsScreen';
 import { SubscriptionsScreen } from '@/screens/SubscriptionsScreen';
 import { TransactionsScreen } from '@/screens/TransactionsScreen';
+import { ImportScreen } from '@/screens/ImportScreen';
 import { AppTabParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppTabParamList>();
@@ -35,6 +36,7 @@ function AppNavigatorInner() {
                 <Stack.Screen name="More" component={PlaceholderScreen} />
                 <Stack.Screen name="Installments" component={InstallmentsScreen} />
                 <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+                <Stack.Screen name="Import" component={ImportScreen} />
             </Stack.Navigator>
             <SideMenu visible={isMenuOpen} onClose={closeMenu} currentRoute={currentRoute} />
         </View>
