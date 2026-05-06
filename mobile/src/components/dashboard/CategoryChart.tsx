@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { CategorySlice } from '@/hooks/useDashboard';
 import { formatCurrency } from '@/utils/transactions';
@@ -7,18 +7,14 @@ import { formatCurrency } from '@/utils/transactions';
 interface Props {
     slices: CategorySlice[];
     selectedMonth: string; // MM/YYYY
-    onMonthChange: (month: string) => void;
-    availableMonths: string[]; // MM/YYYY list, most-recent-first
 }
 
-export function CategoryChart({ slices, selectedMonth, onMonthChange, availableMonths }: Props) {
+export function CategoryChart({ slices, selectedMonth: _selectedMonth }: Props) {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
     const bgCard = isDark ? '#1a1f2e' : '#ffffff';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
-    const pillBg = isDark ? '#374151' : '#f3f4f6';
-    const pillActiveBg = isDark ? '#4b5563' : '#1a1f2e';
 
     const pieData = useMemo(
         () =>
@@ -31,13 +27,6 @@ export function CategoryChart({ slices, selectedMonth, onMonthChange, availableM
     );
 
     const total = slices.reduce((s, c) => s + c.value, 0);
-
-    const monthLabel = (my: string) => {
-        const [m, y] = my.split('/');
-        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        return `${months[parseInt(m, 10) - 1]}/${y.slice(2)}`;
-    };
 
     return (
         <View
@@ -55,32 +44,6 @@ export function CategoryChart({ slices, selectedMonth, onMonthChange, availableM
             <Text style={{ color: textColor, fontSize: 15, fontWeight: '600', marginBottom: 12 }}>
                 Despesas por categoria
             </Text>
-
-            {/* Month selector */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                {availableMonths.slice(0, 12).map((m) => (
-                    <TouchableOpacity
-                        key={m}
-                        onPress={() => onMonthChange(m)}
-                        style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 12,
-                            backgroundColor: m === selectedMonth ? pillActiveBg : pillBg,
-                        }}
-                    >
-                        <Text
-                            style={{
-                                fontSize: 11,
-                                color: m === selectedMonth ? '#ffffff' : labelColor,
-                                fontWeight: m === selectedMonth ? '600' : '400',
-                            }}
-                        >
-                            {monthLabel(m)}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
 
             {slices.length === 0 ? (
                 <Text style={{ color: labelColor, fontSize: 13, textAlign: 'center', paddingVertical: 24 }}>

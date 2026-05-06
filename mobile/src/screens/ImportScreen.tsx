@@ -275,9 +275,37 @@ export function ImportScreen() {
 
             if (insertError) throw new Error(insertError.message);
 
+            // Calculate feedback counts
+            const externalIds = rows
+                .map(r => r.external_id)
+                .filter((id): id is string => id != null);
+
+            let existingCount = 0;
+            if (externalIds.length > 0) {
+                const { count } = await supabase
+                    .from('transactions')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .in('external_id', externalIds);
+                existingCount = count ?? 0;
+            }
+
+            const totalProcessed = rows.length;
+            const withExternalId = externalIds.length;
+            const withoutExternalId = totalProcessed - withExternalId;
+            // "already existed" = those with external_id that matched existing rows
+            const alreadyExisted = Math.min(existingCount, withExternalId);
+            const newlyInserted = withExternalId - alreadyExisted + withoutExternalId;
+
+            const lines = [
+                `📥 Processadas: ${totalProcessed}`,
+                `✅ Novas: ${newlyInserted}`,
+                ...(alreadyExisted > 0 ? [`⏭ Já existentes (ignoradas): ${alreadyExisted}`] : []),
+            ];
+
             Alert.alert(
                 'Importação concluída',
-                `${rows.length} transaç${rows.length === 1 ? 'ão importada' : 'ões importadas'} com sucesso.`,
+                lines.join('\n'),
                 [{ text: 'OK', onPress: resetState }],
             );
         } catch (e) {

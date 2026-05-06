@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
     View,
     Text,
@@ -39,17 +39,21 @@ export function DashboardScreen() {
         refetch,
     } = useDashboard();
 
-    // Current month summary (last item in monthlyData)
-    const currentSummary = monthlyData[monthlyData.length - 1];
-    const displayMonth = selectedMonth;
+    // Current month key for maxMonth constraint
+    const now = new Date();
+    const keys = (() => {
+        const result: string[] = [];
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            result.push(`${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`);
+        }
+        return result;
+    })();
 
-    // Available months for CategoryChart selector (most-recent-first)
-    const availableMonths = useMemo(
-        () => [...monthlyData].reverse().map((d) => d.monthYear),
-        [monthlyData],
-    );
+    // Summary for the selected month
+    const currentSummary = monthlyData.find(d => d.monthYear === selectedMonth) ?? monthlyData[monthlyData.length - 1];
 
-    // Month label for the header
+    // Month label helper (MMM YYYY format)
     const monthLabel = (my: string) => {
         if (!my) return '';
         const [m, y] = my.split('/');
@@ -102,7 +106,7 @@ export function DashboardScreen() {
                                 Dashboard
                             </Text>
                             <Text style={{ color: labelColor, fontSize: 13, marginTop: 2 }}>
-                                {monthLabel(displayMonth)}
+                                {monthLabel(selectedMonth)}
                             </Text>
                         </View>
                     </View>
@@ -128,6 +132,22 @@ export function DashboardScreen() {
                             </TouchableOpacity>
                         </View>
                     )}
+
+                    {/* Monthly bar chart */}
+                    {monthlyData.length > 0 && <MonthlyChart data={monthlyData} />}
+
+
+                    {/* Global month selector — below 12-month chart, above detailed charts */}
+                    <MonthSelector
+                        selectedMonth={selectedMonth}
+                        onMonthChange={setSelectedMonth}
+                        maxMonth={keys[keys.length - 1]}
+                        isDark={isDark}
+                        textColor={textColor}
+                        labelColor={labelColor}
+                        bgCard={bgCard}
+                        borderColor={borderColor}
+                    />
 
                     {/* Summary cards row */}
                     {currentSummary && (
@@ -165,15 +185,10 @@ export function DashboardScreen() {
                         </View>
                     )}
 
-                    {/* Monthly bar chart */}
-                    {monthlyData.length > 0 && <MonthlyChart data={monthlyData} />}
-
                     {/* Category donut chart */}
                     <CategoryChart
                         slices={categorySlices}
                         selectedMonth={selectedMonth}
-                        onMonthChange={setSelectedMonth}
-                        availableMonths={availableMonths}
                     />
 
                     {/* Subscriptions list (null if empty — RN-06) */}
@@ -230,6 +245,95 @@ function SummaryCard({ label, value, color, bgCard, textColor, labelColor }: Sum
             >
                 {formatCurrency(value)}
             </Text>
+        </View>
+    );
+}
+
+// ---- Month Selector ----
+interface MonthSelectorProps {
+    selectedMonth: string; // MM/YYYY
+    maxMonth: string;      // MM/YYYY — can't go beyond this
+    onMonthChange: (m: string) => void;
+    isDark: boolean;
+    textColor: string;
+    labelColor: string;
+    bgCard: string;
+    borderColor: string;
+}
+
+function addMonth(my: string, delta: 1 | -1): string {
+    const [mStr, yStr] = my.split('/');
+    let m = parseInt(mStr, 10) + delta;
+    let y = parseInt(yStr, 10);
+    if (m > 12) { m = 1; y += 1; }
+    if (m < 1) { m = 12; y -= 1; }
+    return `${String(m).padStart(2, '0')}/${y}`;
+}
+
+function monthLabel(my: string): string {
+    if (!my) return '';
+    const [mStr, yStr] = my.split('/');
+    const date = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, 1);
+    return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
+function MonthSelector({
+    selectedMonth,
+    maxMonth,
+    onMonthChange,
+    isDark,
+    textColor,
+    labelColor,
+    bgCard,
+    borderColor,
+}: MonthSelectorProps) {
+    const isAtMax = selectedMonth >= maxMonth;
+
+    return (
+        <View
+            style={{
+                backgroundColor: bgCard,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: borderColor,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                marginBottom: 16,
+            }}
+        >
+            <TouchableOpacity
+                onPress={() => onMonthChange(addMonth(selectedMonth, -1))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <Feather name="chevron-left" size={20} color={textColor} />
+            </TouchableOpacity>
+
+            <Text
+                style={{
+                    color: textColor,
+                    fontSize: 15,
+                    fontWeight: '600',
+                    minWidth: 100,
+                    textAlign: 'center',
+                    textTransform: 'capitalize',
+                }}
+            >
+                {monthLabel(selectedMonth)}
+            </Text>
+
+            <TouchableOpacity
+                onPress={() => { if (!isAtMax) onMonthChange(addMonth(selectedMonth, 1)); }}
+                activeOpacity={isAtMax ? 1 : 0.7}
+                disabled={isAtMax}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ opacity: isAtMax ? 0.3 : 1 }}
+            >
+                <Feather name="chevron-right" size={20} color={textColor} />
+            </TouchableOpacity>
         </View>
     );
 }

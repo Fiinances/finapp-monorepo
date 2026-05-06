@@ -219,19 +219,19 @@
 **Concluído:** `ImportScreen.tsx` e `importParsers.ts` já implementados e sem erros. Upsert por `user_id,external_id` ativo. Registrado na navegação e acessível via SideMenu.
 
 #### Tarefa 18-A — Seletor de Mês Global no Dashboard
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/dashboard-month-selector.md`
 **Constrói:** Reposicionamento do seletor de mês para ficar abaixo do gráfico de últimos 12 meses, com escopo global para os gráficos subsequentes
-**Pronto quando:** O seletor de mês não está no header nem dentro de card específico, e altera consistentemente os dados dos gráficos subsequentes.
+**Concluído:** Componente `MonthSelector` adicionado inline em `DashboardScreen.tsx` com botões `< >`, label `MMM YYYY`, `maxMonth` = mês corrente (botão `>` desabilitado/opaco no limite). Chips de mês removidos do `CategoryChart.tsx`. `currentSummary` atualizado para refletir o mês selecionado.
 
 #### Tarefa 18-B — Filtros Avançados de Transações (sem importBatchId)
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/transactions-filters.md`
 **Constrói:** `TransactionFilterSheet` + `useTransactionFilters` com filtros por mês, categoria, tipo e origem (conta/cartão/manual), removendo `importBatchId`
 **Pronto quando:** Usuário aplica filtros combinados na tela de transações e o badge do botão de filtro reflete a quantidade de filtros ativos.
 
 #### Tarefa 18-C — Idempotência de Importação por `external_id`
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/import-flows.md`, `_reversa_sdd/sdd/import.md`
 **Constrói:** Consolidação da regra oficial de importação com `upsert` por (`user_id`, `external_id`) e feedback de processadas/atualizadas/ignoradas no resumo de importação
 **Pronto quando:** Reimportações OFX com mesmo `external_id` atualizam sem duplicar e o fluxo/documentação de UX ficam consistentes com a regra oficial validada.

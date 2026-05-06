@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
 import { MonthSummary, Transaction } from '@/types';
-import { buildSummaries } from '@/utils/transactions';
+import { buildSummaries, txBillingMonth } from '@/utils/transactions';
+import { TransactionFilters } from './useTransactionFilters';
 
 interface UseTransactionsResult {
     transactions: Transaction[];
@@ -12,8 +13,28 @@ interface UseTransactionsResult {
     refetch: () => Promise<void>;
 }
 
-export function useTransactions(): UseTransactionsResult {
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+function applyFilters(rows: Transaction[], filters: TransactionFilters): Transaction[] {
+    return rows.filter((t) => {
+        if (filters.month && txBillingMonth(t) !== filters.month) return false;
+        if (filters.types.length && !filters.types.includes(t.type)) return false;
+        if (filters.categoryIds.length) {
+            const catId: number | 'uncategorized' = t.category_id ?? 'uncategorized';
+            if (!filters.categoryIds.includes(catId)) return false;
+        }
+        if (filters.importSource !== 'all') {
+            const src = t.credit_card_id != null
+                ? 'credit_card'
+                : t.bank_account_id != null
+                    ? 'bank_account'
+                    : 'manual';
+            if (src !== filters.importSource) return false;
+        }
+        return true;
+    });
+}
+
+export function useTransactions(filters?: TransactionFilters): UseTransactionsResult {
+    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [summaries, setSummaries] = useState<MonthSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -30,7 +51,7 @@ export function useTransactions(): UseTransactionsResult {
             if (sbError) throw new Error(sbError.message);
 
             const rows = (data ?? []) as Transaction[];
-            setTransactions(rows);
+            setAllTransactions(rows);
             setSummaries(buildSummaries(rows));
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Erro ao carregar transações.');
@@ -42,6 +63,8 @@ export function useTransactions(): UseTransactionsResult {
     useEffect(() => {
         void fetch();
     }, [fetch]);
+
+    const transactions = filters ? applyFilters(allTransactions, filters) : allTransactions;
 
     return { transactions, summaries, loading, error, refetch: fetch };
 }

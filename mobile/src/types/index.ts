@@ -26,6 +26,7 @@ export interface Transaction {
     category_id?: number | null;
     category?: Category | null;
     bank_account_id?: number | null;
+    credit_card_id?: number | null;
     created_at?: string;
     updated_at?: string;
 }
