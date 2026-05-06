@@ -1,6 +1,8 @@
 # Spec Impact Matrix — Finapp
 
 > Gerado pelo reversa-architect em 2026-05-02
+> ⚠️ Validação Reviewer em 2026-05-06: matriz parcialmente desatualizada para o escopo mobile atual; válida como base do legado, mas precisa incorporar os novos módulos `dashboard-month-selector`, `transactions-filters`, `ui-header-pattern` e `import-flows`.
+> ✅ [Revisão Q-05 — 2026-05-06] Fonte de verdade definida pelo proprietário: legado web e mobile atual com pesos equivalentes na reconstrução.
 
 ---
 

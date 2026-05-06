@@ -3,6 +3,13 @@
 > Gerado pelo reversa-writer em 2026-05-02 | `doc_level: detalhado`
 > Cobertura: 10 SDDs · 5 conjuntos de User Stories · 15 User Stories · 16 arquivos de código
 
+> ⚠️ **Validação Reviewer (2026-05-06):** esta matriz está desatualizada para o estado atual do workspace.
+> - Foram adicionadas novas specs em `_reversa_sdd/sdd/` (`dashboard-month-selector.md`, `transactions-filters.md`, `ui-header-pattern.md`, `import-flows.md`) que ainda não aparecem no mapeamento.
+> - O mapeamento principal referencia majoritariamente arquivos `app/...` do legado web, enquanto a implementação ativa analisada neste ciclo está em `mobile/src/...`.
+> - Classificação atual: 🟡 **parcialmente válida** para legado, 🔴 **incompleta** para o estado atual mobile.
+>
+> ✅ **[Revisão Q-05 — 2026-05-06]** Decisão do proprietário: a reconstrução deve considerar **legado web e mobile com pesos equivalentes** como fonte de verdade combinada.
+
 ---
 
 ## Legenda

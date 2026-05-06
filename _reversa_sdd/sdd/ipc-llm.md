@@ -73,7 +73,7 @@ fornecidas
 
 | Parâmetro | Valor | Confiança |
 |---|---|---|
-| `model` | `"openai/gpt-oss-120b"` | 🔴 (modelo não é público Groq) |
+| `model` | `"openai/gpt-oss-120b"` | 🟢 (modelo privado/enterprise confirmado pelo proprietário) |
 | `temperature` | `0` (determinístico) | 🟢 |
 
 ### 4.4 Parsing da resposta
