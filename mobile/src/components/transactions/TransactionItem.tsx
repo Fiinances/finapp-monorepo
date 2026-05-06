@@ -4,6 +4,7 @@ import { Pressable, Text, useColorScheme, View } from 'react-native';
 
 import { Transaction } from '@/types';
 import { TYPE_COLORS, TYPE_LABELS, formatCurrency } from '@/utils/transactions';
+import { Card } from '../ui/Card';
 
 interface Props {
     transaction: Transaction;
@@ -33,7 +34,6 @@ export function TransactionItem({ transaction, onPress }: Props) {
     const icon = TYPE_ICONS[type] ?? 'circle';
     const { day, weekday } = parseDayDate(date);
 
-    const cardBg = isDark ? '#1a1f2e' : '#ffffff';
     const textPrimary = isDark ? '#f1f5f9' : '#1a1f2e';
     const textMuted = isDark ? '#6b7280' : '#9ca3af';
     const dividerColor = isDark ? '#2d3748' : '#e5e7eb';
@@ -44,92 +44,97 @@ export function TransactionItem({ transaction, onPress }: Props) {
         <Pressable
             onPress={() => onPress?.(transaction)}
             style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
                 marginHorizontal: 12,
                 marginVertical: 3,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                backgroundColor: cardBg,
-                borderRadius: 14,
                 opacity: pressed ? 0.75 : 1,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: isDark ? 0.25 : 0.06,
-                shadowRadius: 4,
-                elevation: 2,
             })}
         >
-            {/* Coluna de data */}
-            <View style={{ alignItems: 'center', width: 30, marginRight: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: textPrimary, lineHeight: 22 }}>
-                    {day}
-                </Text>
-                <Text style={{ fontSize: 10, fontWeight: '600', color: textMuted, textTransform: 'uppercase' }}>
-                    {weekday}
-                </Text>
-            </View>
-
-            {/* Divisor vertical */}
-            <View style={{ width: 1, height: 36, backgroundColor: dividerColor, marginRight: 12 }} />
-
-            {/* Ícone do tipo */}
-            <View
+            <Card
+                size="md"
+                variant="elevated"
+                className='m-3'
                 style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 12,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                    backgroundColor: `${color}20`,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: isDark ? 0.25 : 0.06,
+                    shadowRadius: 4,
+                    elevation: 2,
                 }}
             >
-                <Feather name={icon} size={17} color={color} />
-            </View>
+                {/* Coluna de data */}
+                <View style={{ alignItems: 'center', width: 30, marginRight: 12 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: textPrimary, lineHeight: 22 }}>
+                        {day}
+                    </Text>
+                    <Text style={{ fontSize: 10, fontWeight: '600', color: textMuted, textTransform: 'uppercase' }}>
+                        {weekday}
+                    </Text>
+                </View>
 
-            {/* Descrição + categoria */}
-            <View style={{ flex: 1, marginRight: 10 }}>
-                <Text
-                    numberOfLines={1}
-                    style={{ fontSize: 14, fontWeight: '600', color: textPrimary, marginBottom: 4 }}
+                {/* Divisor vertical */}
+                <View style={{ width: 1, height: 36, backgroundColor: dividerColor, marginRight: 12 }} />
+
+                {/* Ícone do tipo */}
+                <View
+                    style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12,
+                        backgroundColor: `${color}20`,
+                    }}
                 >
-                    {description}
-                </Text>
-                {category ? (
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 4,
-                            alignSelf: 'flex-start',
-                            paddingHorizontal: 7,
-                            paddingVertical: 2,
-                            borderRadius: 6,
-                            backgroundColor: categoryBg,
-                        }}
+                    <Feather name={icon} size={17} color={color} />
+                </View>
+
+                {/* Descrição + categoria */}
+                <View style={{ flex: 1, marginRight: 10 }}>
+                    <Text
+                        numberOfLines={1}
+                        style={{ fontSize: 14, fontWeight: '600', color: textPrimary, marginBottom: 4 }}
                     >
+                        {description}
+                    </Text>
+                    {category ? (
                         <View
                             style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: 3,
-                                backgroundColor: categoryColor,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                alignSelf: 'flex-start',
+                                paddingHorizontal: 7,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                                backgroundColor: categoryBg,
                             }}
-                        />
-                        <Text style={{ fontSize: 11, fontWeight: '600', color: categoryColor }}>
-                            {category.name}
-                        </Text>
-                    </View>
-                ) : (
-                    <Text style={{ fontSize: 11, color: textMuted }}>{TYPE_LABELS[type]}</Text>
-                )}
-            </View>
+                        >
+                            <View
+                                style={{
+                                    width: 5,
+                                    height: 5,
+                                    borderRadius: 3,
+                                    backgroundColor: categoryColor,
+                                }}
+                            />
+                            <Text style={{ fontSize: 11, fontWeight: '600', color: categoryColor }}>
+                                {category.name}
+                            </Text>
+                        </View>
+                    ) : (
+                        <Text style={{ fontSize: 11, color: textMuted }}>{TYPE_LABELS[type]}</Text>
+                    )}
+                </View>
 
-            {/* Valor */}
-            <Text style={{ fontSize: 15, fontWeight: '700', color, flexShrink: 0 }}>
-                {type === 'income' ? '+' : '−'}{formatCurrency(Math.abs(amount))}
-            </Text>
-        </Pressable>
+                {/* Valor */}
+                <Text style={{ fontSize: 15, fontWeight: '700', color, flexShrink: 0 }}>
+                    {type === 'income' ? '+' : '−'}{formatCurrency(Math.abs(amount))}
+                </Text>
+            </Card>
+        </Pressable >
     );
 }
+

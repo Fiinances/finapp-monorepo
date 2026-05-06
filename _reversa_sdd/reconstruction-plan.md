@@ -287,6 +287,29 @@
 - **Spec atualizada** — `sdd/transactions.md` documenta o padrão Mobile Card + Edit Sheet
 **Pronto quando:** Ao tocar em qualquer transação, o bottom sheet abre pré-populado; usuário pode alterar categoria, descrição, tipo, valor e data; salvar persiste no Supabase e fecha o sheet.
 
+#### Tarefa 18-I — Delete de Transações (Long-press + Confirmação)
+**Status:** ✅ done
+**Constrói:** `deleteTransaction` no hook, `onLongPress` em `TransactionItem`, `onLongPressItem` em `TransactionList`, `handleDeleteTx` em `TransactionsScreen`
+**Concluído:**
+- **deleteTransaction no useTransactions.ts** — executa `supabase.from('transactions').delete().eq('id', id)` e chama `refetch`
+- **onLongPress no TransactionItem** — prop `onLongPress?: (transaction: Transaction) => void` adicionada; `Pressable` com `onLongPress={() => onLongPress?.(transaction)}` e `delayLongPress={400}`
+- **onLongPressItem no TransactionList** — prop adicionada à interface e repassada para `TransactionItem`
+- **handleDeleteTx em TransactionsScreen** — exibe `Alert.alert` de confirmação com botão "Excluir" destrutivo; erro exibido em novo Alert se falhar
+**Pronto quando:** Toque longo em qualquer card exibe confirmação → confirmar exclui a transação e atualiza a lista.
+
+#### Tarefa 18-J — Criar Transação Manual (com vínculo conta/cartão)
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/transactions.md`, `_reversa_sdd/sdd/banks.md`
+**Constrói:** `TransactionCreateSheet.tsx`, `createTransaction` no hook, FAB em `TransactionsScreen`
+**Concluído:**
+- **TransactionCreateSheet criado** — bottom sheet (Modal + Animated.View + PanResponder swipe-to-close + `onCloseRef` pattern); campos: type pills, description TextInput, valor+data, category chips, seletor Vínculo (tabs Nenhum/Conta/Cartão com lista de contas/cartões do hook); footer Cancelar/Criar
+- **TransactionCreate interface exportada** — `{ description, amount, type, date (YYYY-MM-DD), category_id, account_id, credit_card_id }`
+- **createTransaction no useTransactions.ts** — insere com `user_id` obrigatório (RLS); `billing_month` derivado da data quando `credit_card_id` presente (formato `MM/AAAA`)
+- **FAB em TransactionsScreen** — botão `+` absoluto bottom-right, cor `#6366f1`, abre o create sheet
+- **useBanks() em TransactionsScreen** — `accounts` e `creditCards` passados como props para o sheet (não chamado dentro do sheet)
+- **Exports atualizados** — `index.ts` exporta `TransactionCreateSheet` e `TransactionCreate`
+**Pronto quando:** Tocar no FAB abre o sheet; usuário preenche campos e seleciona conta ou cartão opcional; salvar insere no Supabase e fecha o sheet com a lista atualizada.
+
 ---
 
 ### Fase 4: Testes e Validação E2E

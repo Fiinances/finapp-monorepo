@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { TransactionEditSheet, TransactionFilterSheet, TransactionList } from '@/components/transactions';
+import { TransactionCreateSheet, TransactionEditSheet, TransactionFilterSheet, TransactionList } from '@/components/transactions';
+import type { TransactionCreate } from '@/components/transactions';
 import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
+import { useBanks } from '@/hooks/useBanks';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Category, Transaction } from '@/types';
@@ -35,8 +37,12 @@ export function TransactionsScreen() {
     const [sheetVisible, setSheetVisible] = useState(false);
     const [editTarget, setEditTarget] = useState<Transaction | null>(null);
     const [editSaving, setEditSaving] = useState(false);
+    const [editDeleting, setEditDeleting] = useState(false);
+    const [createVisible, setCreateVisible] = useState(false);
+    const [createSaving, setCreateSaving] = useState(false);
 
-    const { transactions: allTransactions, loading, refetch, updateTransaction } = useTransactions();
+    const { transactions: allTransactions, loading, refetch, updateTransaction, deleteTransaction, createTransaction } = useTransactions();
+    const { accounts, creditCards } = useBanks();
 
     const categories = useMemo<Category[]>(() => {
         const map = new Map<number, Category>();
@@ -77,6 +83,30 @@ export function TransactionsScreen() {
             Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível salvar.');
         } finally {
             setEditSaving(false);
+        }
+    }
+
+    async function handleDeleteFromSheet(id: number) {
+        setEditDeleting(true);
+        try {
+            await deleteTransaction(id);
+            setEditTarget(null);
+        } catch (e) {
+            Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível excluir.');
+        } finally {
+            setEditDeleting(false);
+        }
+    }
+
+    async function handleSaveCreate(data: TransactionCreate) {
+        setCreateSaving(true);
+        try {
+            await createTransaction(data);
+            setCreateVisible(false);
+        } catch (e) {
+            Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível criar.');
+        } finally {
+            setCreateSaving(false);
         }
     }
 
@@ -126,6 +156,29 @@ export function TransactionsScreen() {
                 />
             </View>
 
+            {/* FAB — nova transação */}
+            <TouchableOpacity
+                onPress={() => setCreateVisible(true)}
+                style={{
+                    position: 'absolute',
+                    bottom: 24,
+                    right: 20,
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: '#6366f1',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#6366f1',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 8,
+                    elevation: 8,
+                }}
+            >
+                <Feather name="plus" size={24} color="#ffffff" />
+            </TouchableOpacity>
+
             {/* Filter Sheet */}
             <TransactionFilterSheet
                 visible={sheetVisible}
@@ -155,8 +208,20 @@ export function TransactionsScreen() {
                 transaction={editTarget}
                 categories={categories}
                 saving={editSaving}
+                deleting={editDeleting}
                 onSave={handleSaveEdit}
+                onDelete={handleDeleteFromSheet}
                 onClose={() => setEditTarget(null)}
+            />
+            {/* Create Sheet */}
+            <TransactionCreateSheet
+                visible={createVisible}
+                categories={categories}
+                accounts={accounts}
+                creditCards={creditCards}
+                saving={createSaving}
+                onSave={handleSaveCreate}
+                onClose={() => setCreateVisible(false)}
             />
         </SafeAreaView>
     );

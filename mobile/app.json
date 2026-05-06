@@ -23,5 +23,8 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

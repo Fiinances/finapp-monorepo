@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { TransactionCreate } from '@/components/transactions/TransactionCreateSheet';
 import { TransactionPatch } from '@/components/transactions/TransactionEditSheet';
 import { supabase } from '@/lib/supabase';
 import { MonthSummary, Transaction } from '@/types';
@@ -13,6 +14,8 @@ interface UseTransactionsResult {
     error: string | null;
     refetch: () => Promise<void>;
     updateTransaction: (id: number, patch: TransactionPatch) => Promise<void>;
+    deleteTransaction: (id: number) => Promise<void>;
+    createTransaction: (data: TransactionCreate) => Promise<void>;
 }
 
 function applyFilters(rows: Transaction[], filters: TransactionFilters): Transaction[] {
@@ -78,7 +81,43 @@ export function useTransactions(filters?: TransactionFilters): UseTransactionsRe
         await fetch();
     }, [fetch]);
 
+    const deleteTransaction = useCallback(async (id: number): Promise<void> => {
+        const { error: sbError } = await supabase
+            .from('transactions')
+            .delete()
+            .eq('id', id);
+
+        if (sbError) throw new Error(sbError.message);
+        await fetch();
+    }, [fetch]);
+
+    const createTransaction = useCallback(async (data: TransactionCreate): Promise<void> => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Usuário não autenticado.');
+
+        // billing_month: MM/YYYY derived from date when linked to a card
+        const m = data.date.match(/^(\d{4})-(\d{2})/);
+        const billingMonth = m ? `${m[2]}/${m[1]}` : null;
+
+        const { error: sbError } = await supabase
+            .from('transactions')
+            .insert({
+                user_id: user.id,
+                description: data.description,
+                amount: data.amount,
+                type: data.type,
+                date: data.date,
+                category_id: data.category_id,
+                account_id: data.account_id,
+                credit_card_id: data.credit_card_id,
+                billing_month: data.credit_card_id ? billingMonth : null,
+            });
+
+        if (sbError) throw new Error(sbError.message);
+        await fetch();
+    }, [fetch]);
+
     const transactions = filters ? applyFilters(allTransactions, filters) : allTransactions;
 
-    return { transactions, summaries, loading, error, refetch: fetch, updateTransaction };
+    return { transactions, summaries, loading, error, refetch: fetch, updateTransaction, deleteTransaction, createTransaction };
 }

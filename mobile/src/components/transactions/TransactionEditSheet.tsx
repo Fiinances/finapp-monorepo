@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Animated,
     Dimensions,
     Keyboard,
@@ -35,7 +36,9 @@ interface Props {
     transaction: Transaction | null;
     categories: Category[];
     saving?: boolean;
+    deleting?: boolean;
     onSave: (id: number, patch: TransactionPatch) => Promise<void>;
+    onDelete?: (id: number) => Promise<void>;
     onClose: () => void;
 }
 
@@ -85,7 +88,7 @@ function parseInputAmount(raw: string): number | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TransactionEditSheet({ visible, transaction, categories, saving = false, onSave, onClose }: Props) {
+export function TransactionEditSheet({ visible, transaction, categories, saving = false, deleting = false, onSave, onDelete, onClose }: Props) {
     const isDark = useColorScheme() === 'dark';
 
     // Theme tokens
@@ -203,6 +206,23 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
         onClose();
     }
 
+    function handleDelete() {
+        if (!transaction || !onDelete) return;
+        Alert.alert(
+            'Excluir transação',
+            `Deseja excluir "${transaction.description}"?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir', style: 'destructive', onPress: async () => {
+                        try { await onDelete(transaction.id); }
+                        catch (e) { Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível excluir.'); }
+                    },
+                },
+            ]
+        );
+    }
+
     const typeColor = TYPE_COLORS[type]?.light ?? accent;
 
     return (
@@ -255,12 +275,24 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
                         <Text style={{ color: textColor, fontSize: 16, fontWeight: '700' }}>
                             Editar transação
                         </Text>
-                        <TouchableOpacity
-                            onPress={handleClose}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                            <Feather name="x" size={20} color={labelColor} />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            {onDelete && (
+                                <TouchableOpacity
+                                    onPress={handleDelete}
+                                    disabled={deleting || saving}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    style={{ opacity: deleting ? 0.5 : 1 }}
+                                >
+                                    <Feather name="trash-2" size={19} color="#ef4444" />
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                onPress={handleClose}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Feather name="x" size={20} color={labelColor} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <ScrollView
