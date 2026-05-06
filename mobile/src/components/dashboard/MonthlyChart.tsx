@@ -23,6 +23,16 @@ export function MonthlyChart({ data }: Props) {
 
     const scrollRef = useRef<ScrollView>(null);
     const [selected, setSelected] = useState<{ label: string; value: number; color: string } | null>(null);
+    const [hidden, setHidden] = useState<Set<string>>(new Set());
+
+    const toggleHidden = (key: string) => {
+        setSelected(null);
+        setHidden((prev) => {
+            const next = new Set(prev);
+            next.has(key) ? next.delete(key) : next.add(key);
+            return next;
+        });
+    };
 
     const MONTH_ABBR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -34,33 +44,33 @@ export function MonthlyChart({ data }: Props) {
         const label = MONTH_ABBR[monthIdx] ?? item.monthYear.slice(0, 2);
         return [
             {
-                value: item.income,
+                value: hidden.has('income') ? 0 : item.income,
                 label,
-                frontColor: INCOME_COLOR,
+                frontColor: hidden.has('income') ? 'transparent' : INCOME_COLOR,
                 spacing: 2,
                 labelTextStyle: { color: labelColor, fontSize: 9 },
-                onPress: () => setSelected({ label: `${label} · Receita`, value: item.income, color: INCOME_COLOR }),
+                onPress: () => !hidden.has('income') && setSelected({ label: `${label} · Receita`, value: item.income, color: INCOME_COLOR }),
             },
             {
-                value: item.expense,
-                frontColor: EXPENSE_COLOR,
+                value: hidden.has('expense') ? 0 : item.expense,
+                frontColor: hidden.has('expense') ? 'transparent' : EXPENSE_COLOR,
                 spacing: 2,
-                onPress: () => setSelected({ label: `${label} · Despesa`, value: item.expense, color: EXPENSE_COLOR }),
+                onPress: () => !hidden.has('expense') && setSelected({ label: `${label} · Despesa`, value: item.expense, color: EXPENSE_COLOR }),
             },
             {
-                value: item.investment,
-                frontColor: INVEST_COLOR,
+                value: hidden.has('investment') ? 0 : item.investment,
+                frontColor: hidden.has('investment') ? 'transparent' : INVEST_COLOR,
                 spacing: 16,
-                onPress: () => setSelected({ label: `${label} · Investimento`, value: item.investment, color: INVEST_COLOR }),
+                onPress: () => !hidden.has('investment') && setSelected({ label: `${label} · Investimento`, value: item.investment, color: INVEST_COLOR }),
             },
         ];
     });
 
     // Legend
     const legend = [
-        { color: INCOME_COLOR, label: 'Receita' },
-        { color: EXPENSE_COLOR, label: 'Despesa' },
-        { color: INVEST_COLOR, label: 'Investimento' },
+        { key: 'income', color: INCOME_COLOR, label: 'Receita' },
+        { key: 'expense', color: EXPENSE_COLOR, label: 'Despesa' },
+        { key: 'investment', color: INVEST_COLOR, label: 'Investimento' },
     ];
 
     return (
@@ -82,20 +92,29 @@ export function MonthlyChart({ data }: Props) {
 
             {/* Legend */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, gap: 8 }}>
-                {legend.map((item) => (
-                    <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-                        <View
-                            style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: 5,
-                                backgroundColor: item.color,
-                                marginRight: 4,
-                            }}
-                        />
-                        <Text style={{ color: labelColor, fontSize: 11 }}>{item.label}</Text>
-                    </View>
-                ))}
+                {legend.map((item) => {
+                    const isHidden = hidden.has(item.key);
+                    return (
+                        <Pressable
+                            key={item.label}
+                            onPress={() => toggleHidden(item.key)}
+                            style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, opacity: isHidden ? 0.4 : 1 }}
+                        >
+                            <View
+                                style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 5,
+                                    backgroundColor: isHidden ? (isDark ? '#4b5563' : '#d1d5db') : item.color,
+                                    marginRight: 4,
+                                }}
+                            />
+                            <Text style={{ color: labelColor, fontSize: 11, textDecorationLine: isHidden ? 'line-through' : 'none' }}>
+                                {item.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
             </View>
             <Pressable onPress={() => setSelected(null)}>
                 <View style={{ position: 'relative' }}>
