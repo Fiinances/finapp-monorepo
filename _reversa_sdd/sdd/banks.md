@@ -8,6 +8,20 @@
 
 ---
 
+> ### Implementação Mobile — Correções e Melhorias (2026-05-05)
+>
+> ✅ **[Fix RLS — 2026-05-05]** `useBanks.insertAccount` e `useBanks.insertCard` corrigidos para incluir `user_id` no payload via `supabase.auth.getUser()`. Sem este campo, a RLS policy `auth.uid() = user_id` das tabelas `accounts` e `credit_cards` rejeitava a inserção com erro *"new row violates row-level security policy"*. Regra aplicável a todas as tabelas com RLS por `user_id`: `transaction_categories`, `accounts`, `credit_cards`, `installment_groups`, `transactions`, `subscriptions` — qualquer `INSERT` deve incluir `user_id: user.id`.
+>
+> ✅ **[Fix Formatação Monetária — 2026-05-05]** Campos `balance` e `credit_limit` nos formulários de conta e cartão passaram a usar máscara BRL (`currencyMask` / `parseCurrency` em `BanksScreen.tsx`). O pré-preenchimento ao abrir edição também foi ajustado — antes exibia número cru (ex: `"1500"`).
+>
+> ✅ **[Melhoria UX — AddTypeSheet — 2026-05-05]** `Alert.alert` nativo substituído por **`AddTypeSheet`** — bottom sheet customizado com animação `slide`, backdrop clicável, drag handle, ícones Feather, descrições de subtítulo e total adesão ao tema dark/light da aplicação.
+>
+> ✅ **[Melhoria UX — Swipe e Scroll — bottom sheets — 2026-05-05]** Todos os bottom sheets (`AddTypeSheet`, `AccountFormModal`, `CardFormModal`) suportam **gesto de arrastar para baixo para fechar** (`PanResponder` + `Animated.Value`). O drag handle possui área de toque expandida (`paddingVertical: 10, paddingHorizontal: 40`). `AccountFormModal` e `CardFormModal` mantêm `ScrollView` interno para suportar formulários com muitos campos e listas longas de contas.
+>
+> ✅ **[Fix Schema — V3 migration — 2026-05-05]** `credit_cards.account_id` era `NOT NULL` no schema V1, causando erro *"null value in column account_id violates not-null constraint"* ao criar cartão standalone. Migration `V3__credit_cards_account_id_nullable.sql` aplicada no Supabase: (1) `ALTER COLUMN account_id DROP NOT NULL`; (2) FK alterada de `ON DELETE CASCADE` para `ON DELETE SET NULL` — ao deletar conta, cartões vinculados tornam-se standalone em vez de excluídos.
+
+---
+
 ## 1. Identificação
 
 | Atributo | Valor |
@@ -63,9 +77,11 @@ SE accounts.length === 0 E creditCards.length === 0:
 ### 4.2 Estado com dados
 
 ```
-Botão "Adicionar" exibido com Dropdown:
-  - "Conta bancária" → abre AddBankSheet
-  - "Cartão de crédito" → abre AddCreditCardSheet
+Botão "+" (header) exibido → abre AddTypeSheet (bottom sheet customizado):
+  - Opção "Conta bancária" (ícone briefcase) → abre AccountFormModal
+  - Opção "Cartão de crédito" (ícone credit-card) → abre CardFormModal
+  - Opção "Cancelar" → fecha sheet
+  [Web legado usava Dropdown nativo; Mobile usa AddTypeSheet estilizado]
 
 Seção "Contas bancárias" (Wallet2 icon):
   Grid responsivo: 1 col mobile / 2 col sm / 3 col lg
@@ -93,16 +109,16 @@ Seção "Cartões de crédito" (CreditCard icon):
 
 ## 5. Formulários (Sheets)
 
-### 5.1 `AddBankSheet` — Criar conta bancária
+### 5.1 `AddBankSheet` / `AccountFormModal` — Criar conta bancária
 
-🟡 INFERIDO — arquivo não lido diretamente, inferido do `onSuccess: loadAll` e da API IPC
+🟡 INFERIDO (web) / ✅ IMPLEMENTADO (mobile: `AccountFormModal` em `BanksScreen.tsx`)
 
-| Campo | Obrigatório | Tipo |
-|---|---|---|
-| Nome | sim | string |
-| Banco | não | string |
-| Saldo inicial | não | number |
-| Cor | não | hex color picker |
+| Campo | Obrigatório | Tipo | Formatação |
+|---|---|---|---|
+| Nome | sim | string | — |
+| Banco | não | string | — |
+| Saldo atual | não | number | **Máscara BRL** (`currencyMask`) — entrada e pré-preenchimento em pt-BR (ex: `1.500,00`) |
+| Cor | não | hex color picker | `PRESET_COLORS` — 8 opções predefinidas |
 
 **IPC:** `db.accounts.insert(data)` → `loadAll()`
 
@@ -119,18 +135,20 @@ Seção "Cartões de crédito" (CreditCard icon):
 
 **IPC:** `db.accounts.update(id, data)` → `loadAll()`
 
-### 5.3 `AddCreditCardSheet` — Criar cartão de crédito
+### 5.3 `AddCreditCardSheet` / `CardFormModal` — Criar cartão de crédito
 
-🟡 INFERIDO
+🟡 INFERIDO (web) / ✅ IMPLEMENTADO (mobile: `CardFormModal` em `BanksScreen.tsx`)
 
-| Campo | Obrigatório | Tipo |
-|---|---|---|
-| Nome | sim | string |
-| Conta vinculada | sim | FK → accounts |
-| Limite de crédito | não | number |
-| Dia de fechamento | não | 1–31 |
-| Dia de vencimento | não | 1–31 |
-| Cor | não | hex color picker |
+> ✅ **[Melhoria — 2026-05-05]** `account_id` passou a ser **opcional**. Cartões de loja, mercado ou emissor não-bancário podem ser criados sem vínculo com conta. O seletor exibe a opção "Nenhuma (independente)" no topo da lista.
+
+| Campo | Obrigatório | Tipo | Formatação |
+|---|---|---|---|
+| Nome | sim | string | — |
+| Conta vinculada | **não** | FK → accounts \| null | Seletor com opção "Nenhuma (independente)" + dot colorido + check ativo no selecionado |
+| Limite de crédito | não | number | **Máscara BRL** (`currencyMask`) — entrada e pré-preenchimento em pt-BR |
+| Dia de fechamento | não | 1–31 | — |
+| Dia de vencimento | não | 1–31 | — |
+| Cor | não | hex color picker | `PRESET_COLORS` — 8 opções predefinidas |
 
 **IPC:** `db.creditCards.insert(data)` → `loadAll()`
 
@@ -155,18 +173,27 @@ Seção "Cartões de crédito" (CreditCard icon):
 | RN-07 | Cor padrão para conta e cartão é `#6366f1` (indigo) quando não definida | `banks/page.tsx:138,187` | 🟢 |
 | RN-08 | Após qualquer operação de CRUD, `loadAll()` recarrega contas e cartões | `onSuccess={loadAll}` | 🟢 |
 | RN-09 | 🔴 **BUG CONFIRMADO** — Exclusão de conta deve deletar em cascata completa: cartões vinculados, transações e assinaturas. Comportamento atual NÃO implementa cascata. | Confirmado por Q-05 | 🔴 |
+| RN-10 | ✅ **CORRIGIDO (mobile)** — `insertAccount` inclui `user_id` via `supabase.auth.getUser()` para satisfazer a RLS policy `auth.uid() = user_id`; sem este campo a inserção era rejeitada. | `useBanks.ts:insertAccount` | 🟢 |
+| RN-16 | ✅ **CORRIGIDO (mobile)** — `insertCard` corrigido para incluir `user_id: user.id` via `supabase.auth.getUser()`, satisfazendo a RLS policy `auth.uid() = user_id` da tabela `credit_cards`. Bug idêntico ao de `insertAccount` (RN-10). **Padrão obrigatório:** todo `INSERT` em tabela com RLS por `user_id` deve buscar `user` via `supabase.auth.getUser()` e incluir `user_id` explicitamente — tabelas afetadas: `accounts`, `credit_cards`, `installment_groups`, `transactions`, `subscriptions`, `transaction_categories`. | `useBanks.ts:insertCard` | 🟢 |
+| RN-17 | ✅ **CORRIGIDO (schema)** — `credit_cards.account_id` era `NOT NULL` no schema V1, impossibilitando cartões standalone. Migration `V3__credit_cards_account_id_nullable.sql` aplicada: coluna tornou-se nullable e FK alterada de `ON DELETE CASCADE` para `ON DELETE SET NULL`. Ao deletar conta vinculada, cartão passa a ser standalone (`account_id = NULL`) em vez de excluído. | `V3__credit_cards_account_id_nullable.sql` | 🟢 |
+| RN-11 | Campos `balance` e `credit_limit` são formatados com máscara BRL em tempo real (`currencyMask`); ao salvar, `parseCurrency` converte de volta para `number` antes de persistir. | `BanksScreen.tsx` | 🟢 |
+| RN-12 | O seletor de tipo (Conta bancária / Cartão de crédito) usa `AddTypeSheet` — bottom sheet estilizado — em vez de `Alert.alert` nativo; respeita o tema dark/light da aplicação. | `BanksScreen.tsx:handleAddPress` | 🟢 |
+| RN-13 | ✅ **[2026-05-05]** Cartão de crédito pode ser criado **sem vínculo com conta bancária** (`account_id = null`). Caso de uso: cartões de loja, mercado ou bandeira não associados a instituição bancária. O seletor mostra opção "Nenhuma (independente)" selecionada por padrão. `openAddCard` não requer contas existentes. | `BanksScreen.tsx:openAddCard / handleSaveCard` | 🟢 |
+| RN-14 | ✅ **[2026-05-05]** Todos os bottom sheets suportam **gesto de arrastar para baixo para fechar** via `PanResponder` + `Animated.Value` (hook `useSwipeToDismiss`). O `panHandlers` é aplicado apenas ao drag handle (não ao sheet inteiro) para evitar conflito com `ScrollView` interno. Threshold: `dy > 80` ou velocidade `vy > 0.5`. Ao soltar sem atingir threshold, o sheet retorna à posição original com animação `Animated.spring`. | `BanksScreen.tsx:useSwipeToDismiss` | 🟢 |
+| RN-15 | ✅ **[2026-05-05]** `AccountFormModal` e `CardFormModal` envolvem campos do formulário em `<ScrollView>`. O seletor de conta vinculada em `CardFormModal` está dentro do `ScrollView`, portanto suporta listas longas de contas sem truncar o conteúdo visível. `AddTypeSheet` não usa `ScrollView` (conteúdo estático: 2 opções + cancelar). | `BanksScreen.tsx:AccountFormModal / CardFormModal` | 🟢 |
 
 ---
 
 ## 7. Estado do Componente
 
 ```typescript
-accounts: Account[]         // Lista de contas bancárias
-creditCards: CreditCard[]   // Lista de cartões de crédito
-addAccountOpen: boolean     // Controla AddBankSheet
-addCardOpen: boolean        // Controla AddCreditCardSheet
-editAccount: Account | null // Conta sendo editada (null = fechado)
-editCard: CreditCard | null // Cartão sendo editado (null = fechado)
+accounts: BankAccount[]          // Lista de contas bancárias
+creditCards: CreditCard[]        // Lista de cartões de crédito
+addAccountOpen: boolean          // Controla AccountFormModal (criação)
+addCardOpen: boolean             // Controla CardFormModal (criação)
+editAccount: BankAccount | null  // Conta sendo editada (null = fechado)
+editCard: CreditCard | null      // Cartão sendo editado (null = fechado)
+addTypeOpen: boolean             // Controla AddTypeSheet — seletor de tipo (mobile)
 ```
 
 ---
@@ -180,7 +207,7 @@ editCard: CreditCard | null // Cartão sendo editado (null = fechado)
 | **Tolerante a falhas** | `try/catch` silencioso para ambiente sem Electron | 🟢 |
 | **Saldo informativo** | `balance` é campo manual — intencional, não representa saldo real calculado ✅ | 🟢 |
 | **Sem confirmação de exclusão** | Delete executa imediatamente sem dialog de confirmação | 🔴 |
-| **Sem cascata de exclusão** | 🔴 **BUG** — Excluir conta deve deletar cartões, transações e assinaturas. Não implementado. | 🔴 |
+| **Sem cascata de exclusão** | 🔴 **BUG** — Excluir conta deve deletar cartões, transações e assinaturas. Não implementado (web legado). ✅ **CORRIGIDO no mobile** via `useBanks.ts:deleteAccount` (cascata completa). | 🟡 |
 
 ---
 
@@ -216,13 +243,28 @@ Então: db.accounts.delete(5) é chamado
        conta desaparece da lista
 ```
 
-### CA-04 — Cartão exibe conta vinculada
+### CA-04 — Cartão exibe conta vinculada (quando houver)
 
 ```
 Dado:  cartão com account_id=3
        conta id=3 nome="Itaú" banco="Banco Itaú"
 Quando: página /banks é carregada
-Então: card do cartão exibe "Itaú — Banco Itaú" abaixo do nome do cartão
+Então: card do cartão exibe "Itaú" abaixo do nome do cartão
+
+Dado:  cartão com account_id=null
+Quando: página /banks é carregada
+Então: nenhum nome de conta é exibido abaixo do nome do cartão
+```
+
+### CA-07 — Criação de cartão sem conta vinculada
+
+```
+Dado:  formulário CardFormModal aberto
+       opção "Nenhuma (independente)" selecionada no seletor de conta
+       nome preenchido como "Cartão Shopee"
+Quando: usuário submete o formulário
+Então: credit_cards.insert é chamado com account_id = null
+       cartão aparece na lista sem nome de conta vinculada
 ```
 
 ### CA-05 — Click no card navega para detalhe
@@ -249,6 +291,21 @@ Dado:  cartão sem credit_limit preenchido
 Quando: card é renderizado
 Então: texto "Sem limite cadastrado" é exibido
        (não exibe R$0,00)
+```
+
+### CA-08 — Gesto de arrastar para baixo fecha o sheet
+
+```
+Dado:  qualquer bottom sheet aberto (AddTypeSheet, AccountFormModal ou CardFormModal)
+Quando: usuário toca no drag handle e arrasta para baixo ≥ 80px
+        OU arrasta com velocidade vy ≥ 0.5
+Então: sheet fecha (onClose chamado)
+       a posição translateY é resetada para 0
+
+Dado:  usuário arrasta para baixo < 80px e solta
+Quando: gesto é liberado
+Então: sheet retorna à posição original com animação spring
+       sheet permanece aberto
 ```
 
 ---

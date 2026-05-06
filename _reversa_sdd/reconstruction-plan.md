@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03
-**Status:** 26 tarefas | 19 concluídas | 7 pendentes
+**Status:** 26 tarefas | 20 concluídas | 6 pendentes
 
 ---
 
@@ -169,10 +169,14 @@
 **Pronto quando:** Gráficos adaptados para visualização mobile e temas.
 
 #### Tarefa 16 — Tela: Gestão de Bancos e Cartões
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/banks.md`
 **Constrói:** CRUD Mobile (Forms com validação)
-**Pronto quando:** Usuário gerencia contas e cartões pelo app.
+**Concluído:**
+- `useBanks.ts` — CRUD completo com cascade delete; `insertAccount` e `insertCard` corrigidos para incluir `user_id: user.id` via `supabase.auth.getUser()`, satisfazendo a RLS policy `auth.uid() = user_id` nas tabelas `accounts` e `credit_cards` (bug: nova linha violava política de segurança de linha); **padrão obrigatório para T17+:** todo `INSERT` em tabela com RLS por `user_id` deve incluir `user_id` explicitamente — tabelas afetadas: `accounts`, `credit_cards`, `installment_groups`, `transactions`, `subscriptions`, `transaction_categories`
+- `BanksScreen.tsx` — lista, modais de form, estado vazio, confirmação de exclusão; campos `balance` (saldo) e `credit_limit` (limite de crédito) com **máscara monetária BRL** (`currencyMask` / `parseCurrency`) — entrada e pré-preenchimento na edição formatados em pt-BR; `Alert.alert` nativo substituído por **`AddTypeSheet`** — bottom sheet estilizado, respeitando tema dark/light, com opções Conta bancária e Cartão de crédito; campo `Conta vinculada` no formulário de cartão tornado **opcional** — cartões podem ser criados sem vínculo bancário (`account_id = null`), suportando cartões de loja, mercado ou emissor não-bancário; seletor exibe opção "Nenhuma (independente)" no topo da lista; **todos os bottom sheets** suportam gesto de arrastar para baixo para fechar via `useSwipeToDismiss` (`PanResponder` + `Animated.Value`, threshold dy>80 ou vy>0.5, aplicado no drag handle); `AccountFormModal` e `CardFormModal` com `ScrollView` para suportar formulários e listas longas de contas; `AddTypeSheet` migrado de `animationType="fade"` para `"slide"` para consistência
+- Tipos `BankAccount` / `CreditCard`; navegação via SideMenu
+- **Fix schema** — `V3__credit_cards_account_id_nullable.sql` aplicada no Supabase: `credit_cards.account_id` tornado nullable e FK alterada para `ON DELETE SET NULL`; corrige erro *"null value in column account_id violates not-null constraint"* ao criar cartão sem vínculo bancário
 
 #### Tarefa 17 — Tela: Gestão de Parcelamentos e Assinaturas
 **Status:** pending

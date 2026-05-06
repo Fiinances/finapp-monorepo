@@ -39,6 +39,28 @@ export interface MonthSummary {
     transactions: Transaction[];
 }
 
+export interface BankAccount {
+    id: number;
+    name: string;
+    bank?: string | null;
+    balance?: number | null;
+    color?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface CreditCard {
+    id: number;
+    account_id?: number | null;
+    name: string;
+    color?: string | null;
+    credit_limit?: number | null;
+    closing_day?: number | null;
+    due_day?: number | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export type SubscriptionPeriod = 'weekly' | 'monthly' | 'yearly';
 
 export interface Subscription {

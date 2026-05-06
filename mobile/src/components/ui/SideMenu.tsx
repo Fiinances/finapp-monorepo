@@ -1,4 +1,6 @@
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
     Animated,
@@ -12,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
+import type { AppTabParamList } from '@/navigation/types';
 
 const MENU_WIDTH = 285;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -23,6 +26,7 @@ interface SideMenuProps {
 
 export function SideMenu({ visible, onClose }: SideMenuProps) {
     const { user, signOut } = useAuth();
+    const navigation = useNavigation<NativeStackNavigationProp<AppTabParamList>>();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const insets = useSafeAreaInsets();
@@ -211,7 +215,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                     <MenuItem
                         icon="credit-card"
                         label="Bancos e Cartões"
-                        onPress={onClose}
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('Banks'), 250); }}
                         textPrimary={textPrimary}
                         bgActive={bgItemActive}
                     />
