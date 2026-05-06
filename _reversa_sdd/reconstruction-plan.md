@@ -237,16 +237,29 @@
 **Pronto quando:** Reimportações OFX com mesmo `external_id` atualizam sem duplicar e o fluxo/documentação de UX ficam consistentes com a regra oficial validada.
 
 #### Tarefa 18-D — Componente Reutilizável de Header (`AppHeader`)
-**Status:** pending
+**Status:** done ✅
 **Lê:** `_reversa_sdd/sdd/ui-header-pattern.md`
 **Constrói:** Componente compartilhado de header com slots `left/center/right` e migração progressiva das telas principais
 **Pronto quando:** As telas centrais usam o mesmo componente de header e mantêm consistência visual entre temas.
 
 #### Tarefa 18-E — Atualização das Matrizes de Rastreabilidade/Impacto (Web + Mobile)
-**Status:** pending
+**Status:** done ✅
 **Lê:** `_reversa_sdd/traceability/code-spec-matrix.md`, `_reversa_sdd/traceability/spec-impact-matrix.md`
 **Constrói:** Revisão das matrizes para refletir cobertura equivalente entre legado web e implementação mobile
 **Pronto quando:** As matrizes incluem os módulos mobile novos e deixam explícita a estratégia de fonte de verdade combinada.
+
+#### Tarefa 18-F — Upsert Completo de Transações na Reimportação (troca de source)
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/import-flows.md`, `_reversa_sdd/sdd/import.md`
+**Constrói:** Garantia de que o upsert por `external_id` sobrescreve **todos os campos relevantes** — incluindo `account_id`, `credit_card_id` e `billing_month` — permitindo que uma transação mude de cartão para conta bancária (e vice-versa) em reimportações
+**Detalhes:**
+- Revisar a chamada Supabase `upsert` em `mobile/src/screens/ImportScreen.tsx` para garantir que todos os campos (`account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`) estão explicitamente listados no payload do upsert (Supabase `upsert` com `ignoreDuplicates: false` já atualiza o que for passado)
+- Garantir que quando o destino é conta bancária: `credit_card_id: null` e `billing_month: null` são passados explicitamente (não omitidos) para que sobrescrevam valores anteriores
+- Garantir que quando o destino é cartão: `account_id: null` é passado explicitamente
+- Preservar `category_id` existente: usar `COALESCE(transactions.category_id, EXCLUDED.category_id)` via Supabase RPC ou checar no frontend antes do upsert
+- Exibir na tela de preview coluna **Status** com `✨ Nova` / `🔄 Atualizar` por transação (requer pré-consulta de `external_id`s existentes antes de montar o preview)
+- Exibir no resumo de confirmação: quantas são novas, quantas serão atualizadas e quantas tiveram source alterado (cartão→conta ou conta→cartão)
+**Pronto quando:** Reimportação de OFX/CSV atualiza todos os campos da transação existente, incluindo mudança de fonte entre conta bancária e cartão de crédito, sem duplicatas; CAs 09, 10 e 11 de `import.md` passam.
 
 ---
 

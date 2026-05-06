@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useBanks } from '@/hooks/useBanks';
 import { BankAccount, CreditCard } from '@/types';
+import { AppHeader } from '@/components/ui';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -315,42 +316,27 @@ export function BanksScreen() {
         <View style={{ flex: 1, backgroundColor: bg }}>
             <SafeAreaView style={{ flex: 1 }}>
                 {/* Header */}
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 16,
-                        paddingVertical: 14,
-                    }}
-                >
-                    <TouchableOpacity
-                        onPress={openMenu}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        style={{ padding: 4, marginRight: 16 }}
-                    >
-                        <Feather name="menu" size={22} color={textColor} />
-                    </TouchableOpacity>
-
-                    <Text style={{ color: textColor, fontSize: 18, fontWeight: '700', flex: 1 }}>
-                        Bancos e Cartões
-                    </Text>
-
-                    {!isEmpty ? (
-                        <TouchableOpacity
-                            onPress={handleAddPress}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{
-                                width: 38, height: 38, borderRadius: 19,
-                                backgroundColor: '#6366f1',
-                                alignItems: 'center', justifyContent: 'center',
-                            }}
-                        >
-                            <Feather name="plus" size={20} color="#fff" />
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={{ width: 38 }} />
-                    )}
-                </View>
+                <AppHeader
+                    title="Bancos e Cartões"
+                    onLeftPress={openMenu}
+                    rightElement={
+                        !isEmpty ? (
+                            <TouchableOpacity
+                                onPress={handleAddPress}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                style={{
+                                    width: 38, height: 38, borderRadius: 19,
+                                    backgroundColor: '#6366f1',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >
+                                <Feather name="plus" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={{ width: 38 }} />
+                        )
+                    }
+                />
 
                 {/* Content */}
                 {loading ? (

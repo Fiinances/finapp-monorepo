@@ -3,12 +3,8 @@
 > Gerado pelo reversa-writer em 2026-05-02 | `doc_level: detalhado`
 > Cobertura: 10 SDDs · 5 conjuntos de User Stories · 15 User Stories · 16 arquivos de código
 
-> ⚠️ **Validação Reviewer (2026-05-06):** esta matriz está desatualizada para o estado atual do workspace.
-> - Foram adicionadas novas specs em `_reversa_sdd/sdd/` (`dashboard-month-selector.md`, `transactions-filters.md`, `ui-header-pattern.md`, `import-flows.md`) que ainda não aparecem no mapeamento.
-> - O mapeamento principal referencia majoritariamente arquivos `app/...` do legado web, enquanto a implementação ativa analisada neste ciclo está em `mobile/src/...`.
-> - Classificação atual: 🟡 **parcialmente válida** para legado, 🔴 **incompleta** para o estado atual mobile.
->
-> ✅ **[Revisão Q-05 — 2026-05-06]** Decisão do proprietário: a reconstrução deve considerar **legado web e mobile com pesos equivalentes** como fonte de verdade combinada.
+> ✅ **Atualizado em 2026-05-06 (Tarefa 18-E):** Seção mobile adicionada cobrindo hooks, telas, componentes e os 4 SDDs novos.
+> ✅ **[Revisão Q-05 — 2026-05-06]** Fonte de verdade: legado web e mobile com pesos equivalentes.
 
 ---
 
@@ -88,6 +84,55 @@
 
 ---
 
+## 1-B. Mobile → Spec (por arquivo — `mobile/src/`)
+
+### Hooks
+
+| Arquivo | SDD | User Stories | Confiança |
+|---|---|---|---|
+| `mobile/src/hooks/useTransactions.ts` | [transactions.md](../sdd/transactions.md) | US-01, US-02, US-03 | 🟢 |
+| `mobile/src/hooks/useTransactionFilters.ts` | [transactions-filters.md](../sdd/transactions-filters.md) | US-03 (filtros) | 🟢 |
+| `mobile/src/hooks/useDashboard.ts` | [dashboard.md](../sdd/dashboard.md) | US-12, US-13, US-14, US-15 | 🟢 |
+| `mobile/src/hooks/useBanks.ts` | [banks.md](../sdd/banks.md) | — | 🟢 |
+| `mobile/src/hooks/useInstallments.ts` | [installments.md](../sdd/installments.md) | US-06, US-07, US-08 | 🟢 |
+| `mobile/src/hooks/useSubscriptions.ts` | [subscriptions.md](../sdd/subscriptions.md) | US-09, US-10, US-11 | 🟢 |
+
+### Telas (screens/)
+
+| Arquivo | SDD | User Stories | Confiança |
+|---|---|---|---|
+| `mobile/src/screens/DashboardScreen.tsx` | [dashboard.md](../sdd/dashboard.md), [dashboard-month-selector.md](../sdd/dashboard-month-selector.md) | US-12, US-13, US-14, US-15 | 🟢 |
+| `mobile/src/screens/TransactionsScreen.tsx` | [transactions.md](../sdd/transactions.md), [transactions-filters.md](../sdd/transactions-filters.md) | US-01, US-02, US-03 | 🟢 |
+| `mobile/src/screens/BanksScreen.tsx` | [banks.md](../sdd/banks.md) | — | 🟢 |
+| `mobile/src/screens/InstallmentsScreen.tsx` | [installments.md](../sdd/installments.md) | US-06, US-07, US-08 | 🟢 |
+| `mobile/src/screens/SubscriptionsScreen.tsx` | [subscriptions.md](../sdd/subscriptions.md) | US-09, US-10, US-11 | 🟢 |
+| `mobile/src/screens/ImportScreen.tsx` | [import.md](../sdd/import.md), [import-flows.md](../sdd/import-flows.md) | US-01, US-02, US-03 | 🟢 |
+| `mobile/src/screens/auth/LoginScreen.tsx` | — (Supabase Auth) | Login | 🟢 |
+| `mobile/src/screens/auth/RegisterScreen.tsx` | — (Supabase Auth + Zod) | Cadastro | 🟢 |
+
+### Componentes Mobile
+
+| Arquivo | SDD | User Stories | Confiança |
+|---|---|---|---|
+| `mobile/src/components/ui/AppHeader.tsx` | [ui-header-pattern.md](../sdd/ui-header-pattern.md) | Todas (header) | 🟢 |
+| `mobile/src/components/ui/SideMenu.tsx` | [ui-header-pattern.md](../sdd/ui-header-pattern.md) | Todas (nav) | 🟢 |
+| `mobile/src/components/transactions/TransactionItem.tsx` | [transactions.md](../sdd/transactions.md) | US-03 | 🟢 |
+| `mobile/src/components/transactions/TransactionList.tsx` | [transactions.md](../sdd/transactions.md) | US-03 | 🟢 |
+| `mobile/src/components/transactions/TransactionFilterSheet.tsx` | [transactions-filters.md](../sdd/transactions-filters.md) | US-03 (filtros) | 🟢 |
+| `mobile/src/components/dashboard/` | [dashboard.md](../sdd/dashboard.md) | US-12, US-13, US-14, US-15 | 🟡 |
+
+### Lib / Utils Mobile
+
+| Arquivo | SDD | Confiança |
+|---|---|---|
+| `mobile/src/lib/importParsers.ts` | [import.md](../sdd/import.md), [import-flows.md](../sdd/import-flows.md) | 🟢 |
+| `mobile/src/lib/supabase.ts` | — (infraestrutura) | 🟢 |
+| `mobile/src/contexts/AuthContext.tsx` | — (Supabase Auth) | 🟢 |
+| `mobile/src/contexts/SideMenuContext.tsx` | [ui-header-pattern.md](../sdd/ui-header-pattern.md) | 🟢 |
+| `mobile/src/navigation/AppNavigator.tsx` | — (React Navigation) | 🟢 |
+
+---
+
 ## 2. Spec → Código (por SDD)
 
 | SDD | Arquivos de código mapeados | Cobertura |
@@ -102,6 +147,10 @@
 | [installments.md](../sdd/installments.md) | `app/installments/page.tsx`, `detect-installments-sheet.tsx`, `lib/utils.ts` | 🟡 Média (detect inferida) |
 | [subscriptions.md](../sdd/subscriptions.md) | `app/subscriptions/page.tsx`, 2 sheets | 🟡 Média (sheets inferidas) |
 | [categories.md](../sdd/categories.md) | `app/features/categories/category.tsx`, `components/transaction-table.tsx`, 6 migrations | 🟢 Alta |
+| [dashboard-month-selector.md](../sdd/dashboard-month-selector.md) | `mobile/src/screens/DashboardScreen.tsx` (MonthSelector inline) | 🟢 Alta |
+| [transactions-filters.md](../sdd/transactions-filters.md) | `mobile/src/components/transactions/TransactionFilterSheet.tsx`, `mobile/src/hooks/useTransactionFilters.ts`, `mobile/src/screens/TransactionsScreen.tsx` | 🟢 Alta |
+| [ui-header-pattern.md](../sdd/ui-header-pattern.md) | `mobile/src/components/ui/AppHeader.tsx`, 6 screens migradas (Dashboard, Transactions, Banks, Installments, Subscriptions, Import) | 🟢 Alta |
+| [import-flows.md](../sdd/import-flows.md) | `mobile/src/screens/ImportScreen.tsx`, `mobile/src/lib/importParsers.ts` | 🟢 Alta |
 
 ---
 
@@ -166,7 +215,7 @@
 
 ## 6. Índice completo de artefatos gerados
 
-### SDDs (`_reversa_sdd/sdd/`)
+### SDDs (`_reversa_sdd/sdd/`) — Legado Web
 - [ipc-db.md](../sdd/ipc-db.md)
 - [transactions.md](../sdd/transactions.md)
 - [import.md](../sdd/import.md)
@@ -177,6 +226,12 @@
 - [installments.md](../sdd/installments.md)
 - [subscriptions.md](../sdd/subscriptions.md)
 - [categories.md](../sdd/categories.md)
+
+### SDDs (`_reversa_sdd/sdd/`) — Novos (Mobile)
+- [dashboard-month-selector.md](../sdd/dashboard-month-selector.md)
+- [transactions-filters.md](../sdd/transactions-filters.md)
+- [ui-header-pattern.md](../sdd/ui-header-pattern.md)
+- [import-flows.md](../sdd/import-flows.md)
 
 ### User Stories (`_reversa_sdd/user-stories/`)
 - [importar-extrato.md](../user-stories/importar-extrato.md) — US-01, 02, 03

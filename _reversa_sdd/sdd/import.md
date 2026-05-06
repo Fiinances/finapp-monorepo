@@ -32,7 +32,7 @@
 | Preview editável das transações antes de salvar | **Must** | 🟢 |
 | Seleção de conta/cartão de destino | **Must** | 🟢 |
 | Persistência via IPC (`db.transactions.insert`) | **Must** | 🟢 |
-| Deduplicação automática de OFX por `external_id` (via IPC) | **Must** | 🟢 |
+| Upsert completo de OFX por `external_id` — atualiza todos os campos, inclusive `account_id`/`credit_card_id` | **Must** | 🟢 |
 | Inferência automática de `billing_month` pelo `closing_day` do cartão | **Should** | 🟢 |
 | Auto-categorização por IA (`ai.categorize`) | **Should** | 🟢 |
 | Detecção de padrão de parcelamento na descrição | **Should** | 🟢 |
@@ -201,7 +201,8 @@ billingMonth: string     // MM/YYYY
 
 | ID | Regra | Localização | Confiança |
 |---|---|---|---|
-| RN-01 | Deduplicação é responsabilidade do IPC (external_id) — front não valida | `confirmImport():412` | 🟢 |
+| RN-01 | Upsert por `external_id`: todos os campos são sobrescritos no conflito — `account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`; `category_id` é preservado se já definido | `confirmImport():412` | 🟢 |
+| RN-01a | Uma transação pode mudar de source: cartão → conta (credit_card_id vira null, account_id é preenchido) ou conta → cartão (account_id vira null, credit_card_id e billing_month são preenchidos) | upsert Supabase | 🟢 |
 | RN-02 | `billing_month` só é obrigatório quando o destino é cartão (`c:`) | `confirmImport():400-403` | 🟢 |
 | RN-03 | `billing_month` é inferido automaticamente pelo `closing_day` do cartão | `useEffect:281-288` | 🟢 |
 | RN-04 | Tipo é clicável na tabela de preview (ciclo: income→expense→investment→transfer→card_payment→income) | `updateRow:618` | 🟢 |
@@ -289,6 +290,35 @@ Dado:  5 transações no preview, destino = cartão, billingMonth = "02/2025"
 Quando: usuário clica em "Importar 5 transações"
 Então: todas as 5 transações são inseridas com billing_month = "02/2025"
        e credit_card_id preenchido com o id do cartão selecionado
+```
+
+### CA-09 — Reimportação muda source de cartão para conta bancária
+
+```
+Dado:  transação OFX FITID="abc123" já existe com credit_card_id=5, account_id=null
+Quando: usuário reimporta o mesmo OFX selecionando conta bancária como destino
+Então: transação é atualizada para account_id=3, credit_card_id=null, billing_month=null
+       sem criar duplicata
+       resumo indica: "1 atualizada (source alterado: cartão → conta)"
+```
+
+### CA-10 — Reimportação muda source de conta para cartão
+
+```
+Dado:  transação OFX FITID="xyz789" já existe com account_id=3, credit_card_id=null
+Quando: usuário reimporta o mesmo OFX selecionando cartão como destino, billing_month="05/2026"
+Então: transação é atualizada para credit_card_id=5, account_id=null, billing_month="05/2026"
+       sem criar duplicata
+       resumo indica: "1 atualizada (source alterado: conta → cartão)"
+```
+
+### CA-11 — category_id preservado na reimportação
+
+```
+Dado:  transação OFX FITID="abc123" já existe com category_id=7 (categorizado manualmente)
+Quando: usuário reimporta o mesmo OFX
+Então: transação é atualizada nos demais campos
+       category_id permanece 7 (não sobrescrito)
 ```
 
 ### CA-06 — Importação para conta bancária não inclui billing_month

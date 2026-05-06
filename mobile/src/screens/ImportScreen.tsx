@@ -30,6 +30,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { supabase } from '@/lib/supabase';
 import type { BankAccount, CreditCard, TransactionType } from '@/types';
+import { AppHeader } from '@/components/ui';
 import {
     inferBillingMonth,
     mapCsvToTransactions,
@@ -329,33 +330,17 @@ export function ImportScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={['top', 'left', 'right']}>
             {/* ── Header ── */}
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    backgroundColor: cardBg,
-                    borderBottomWidth: 1,
-                    borderBottomColor: borderColor,
-                }}
-            >
-                <TouchableOpacity
-                    onPress={openMenu}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ marginRight: 12 }}
-                >
-                    <Feather name="menu" size={22} color={textPrimary} />
-                </TouchableOpacity>
-                <Text style={{ flex: 1, color: textPrimary, fontSize: 18, fontWeight: '700' }}>
-                    Importar Extrato
-                </Text>
-                {step === 'preview' && (
-                    <TouchableOpacity onPress={resetState} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Feather name="x" size={20} color={textMuted} />
-                    </TouchableOpacity>
-                )}
-            </View>
+            <AppHeader
+                title="Importar Extrato"
+                onLeftPress={openMenu}
+                rightElement={
+                    step === 'preview' ? (
+                        <TouchableOpacity onPress={resetState} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <Feather name="x" size={20} color={textMuted} />
+                        </TouchableOpacity>
+                    ) : null
+                }
+            />
 
             {/* ── Step indicator ── */}
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16, gap: 8 }}>

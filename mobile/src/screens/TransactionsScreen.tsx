@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionFilterSheet, TransactionList } from '@/components/transactions';
+import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -26,9 +27,6 @@ export function TransactionsScreen() {
     const { openMenu } = useSideMenu();
 
     const bg = isDark ? '#0f1117' : '#f5f6f8';
-    const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
-    const labelColor = isDark ? '#6b7280' : '#9ca3af';
-    const borderColor = isDark ? '#1e2433' : '#e5e7eb';
 
     const { filters, setMonth, toggleType, toggleCategory, setImportSource, activeCount } =
         useTransactionFilters();
@@ -72,60 +70,37 @@ export function TransactionsScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
             {/* Header */}
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    borderBottomWidth: 1,
-                    borderBottomColor: borderColor,
-                }}
-            >
-                <TouchableOpacity
-                    onPress={openMenu}
-                    style={{ padding: 4, marginRight: 12 }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    <Feather name="menu" size={22} color={textColor} />
-                </TouchableOpacity>
-
-                <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: textColor }}>
-                        Transações
-                    </Text>
-                    {filters.month && (
-                        <Text style={{ fontSize: 12, color: labelColor, marginTop: 1 }}>
-                            {monthLabelShort(filters.month)}
-                        </Text>
-                    )}
-                </View>
-
-                <TouchableOpacity
-                    onPress={() => setSheetVisible(true)}
-                    style={{
-                        padding: 8,
-                        borderRadius: 10,
-                        backgroundColor: activeCount > 0
-                            ? '#6366f1'
-                            : isDark ? '#1e2433' : '#eef2ff',
-                    }}
-                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Feather
-                            name="filter"
-                            size={16}
-                            color={activeCount > 0 ? '#ffffff' : '#6366f1'}
-                        />
-                        {activeCount > 0 && (
-                            <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
-                                {activeCount}
-                            </Text>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            </View>
+            <AppHeader
+                title="Transações"
+                subtitle={filters.month ? monthLabelShort(filters.month) : undefined}
+                onLeftPress={openMenu}
+                rightElement={
+                    <TouchableOpacity
+                        onPress={() => setSheetVisible(true)}
+                        style={{
+                            padding: 8,
+                            borderRadius: 10,
+                            backgroundColor: activeCount > 0
+                                ? '#6366f1'
+                                : isDark ? '#1e2433' : '#eef2ff',
+                        }}
+                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Feather
+                                name="filter"
+                                size={16}
+                                color={activeCount > 0 ? '#ffffff' : '#6366f1'}
+                            />
+                            {activeCount > 0 && (
+                                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
+                                    {activeCount}
+                                </Text>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                }
+            />
 
             {/* Lista */}
             <View style={{ flex: 1 }}>

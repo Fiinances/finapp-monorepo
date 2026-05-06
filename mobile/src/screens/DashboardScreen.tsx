@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDashboard } from '@/hooks/useDashboard';
 import { MonthlyChart, CategoryChart, SubscriptionsList } from '@/components/dashboard';
+import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { formatCurrency } from '@/utils/transactions';
 
@@ -75,6 +76,11 @@ export function DashboardScreen() {
     return (
         <View style={{ flex: 1, backgroundColor: bg }}>
             <SafeAreaView style={{ flex: 1 }}>
+                <AppHeader
+                    title="Dashboard"
+                    subtitle={monthLabel(selectedMonth)}
+                    onLeftPress={openMenu}
+                />
                 <ScrollView
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
                     refreshControl={
@@ -85,32 +91,6 @@ export function DashboardScreen() {
                         />
                     }
                 >
-                    {/* Header */}
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center', paddingVertical: 14,
-                        }}
-                    >
-                        <TouchableOpacity
-                            onPress={openMenu}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{ padding: 4, marginRight: 16 }}
-                        >
-                            <Feather name="menu" size={22} color={textColor} />
-                        </TouchableOpacity>
-
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: textColor, fontSize: 18, fontWeight: '700' }}>
-                                Dashboard
-                            </Text>
-                            <Text style={{ color: labelColor, fontSize: 13, marginTop: 2 }}>
-                                {monthLabel(selectedMonth)}
-                            </Text>
-                        </View>
-                    </View>
-
                     {/* Error banner */}
                     {error && (
                         <View

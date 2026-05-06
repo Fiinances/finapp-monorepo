@@ -24,6 +24,7 @@ import {
     useSubscriptions,
 } from '@/hooks/useSubscriptions';
 import type { Subscription, SubscriptionPeriod } from '@/types';
+import { AppHeader } from '@/components/ui';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -410,34 +411,23 @@ export function SubscriptionsScreen() {
         <View style={{ flex: 1, backgroundColor: bg }}>
             <SafeAreaView style={{ flex: 1 }}>
                 {/* Header */}
-                <View
-                    style={{
-                        flexDirection: 'row', alignItems: 'center',
-                        paddingHorizontal: 20, paddingVertical: 16
-                    }}
-                >
-                    <TouchableOpacity
-                        onPress={openMenu}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        style={{ padding: 4, marginRight: 16 }}
-                    >
-                        <Feather name="menu" size={22} color={textColor} />
-                    </TouchableOpacity>
-                    <Text style={{ color: textColor, fontSize: 18, fontWeight: '700', flex: 1 }}>
-                        Assinaturas
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() => openSheet()}
-                        activeOpacity={0.8}
-                        style={{
-                            width: 38, height: 38, borderRadius: 19,
-                            backgroundColor: '#6366f1',
-                            alignItems: 'center', justifyContent: 'center',
-                        }}
-                    >
-                        <Feather name="plus" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </View>
+                <AppHeader
+                    title="Assinaturas"
+                    onLeftPress={openMenu}
+                    rightElement={
+                        <TouchableOpacity
+                            onPress={() => openSheet()}
+                            activeOpacity={0.8}
+                            style={{
+                                width: 38, height: 38, borderRadius: 19,
+                                backgroundColor: '#6366f1',
+                                alignItems: 'center', justifyContent: 'center',
+                            }}
+                        >
+                            <Feather name="plus" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    }
+                />
 
                 {/* Metric cards */}
                 <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginBottom: 16 }}>

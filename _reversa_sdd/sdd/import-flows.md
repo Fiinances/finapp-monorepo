@@ -24,7 +24,7 @@ O fluxo de importação precisa ser diferente dependendo do tipo de conta seleci
 
 ## 2. Regra de Idempotência por `external_id`
 
-> A importação deve usar `upsert` por chave lógica de origem (`user_id`, `external_id`) para evitar duplicatas e atualizar registros já existentes quando o mesmo identificador externo reaparece.
+> A importação deve usar `upsert` por chave lógica de origem (`user_id`, `external_id`) para evitar duplicatas e **atualizar todos os campos** dos registros já existentes quando o mesmo identificador externo reaparece.
 
 | Tipo | Critério de idempotência |
 |---|---|
@@ -32,6 +32,47 @@ O fluxo de importação precisa ser diferente dependendo do tipo de conta seleci
 | CSV sem `external_id` | sem deduplicação forte por identificador externo |
 
 Com isso, reimportações de OFX atualizam o que já existe e inserem apenas novos lançamentos não conhecidos.
+
+### 2.1 Campos atualizados no upsert
+
+Quando uma transação com o mesmo `external_id` já existe, **todos os campos abaixo são sobrescritos** com os valores da importação atual:
+
+| Campo | Comportamento no upsert |
+|---|---|
+| `account_id` | Atualizado — se a reimportação for de conta bancária, sobrescreve o valor anterior (inclusive se era `null`) |
+| `credit_card_id` | Atualizado — se a reimportação for de cartão, sobrescreve o valor anterior (inclusive se era `null`) |
+| `billing_month` | Atualizado para o mês de fatura da reimportação atual (ou `null` para conta bancária) |
+| `amount` | Atualizado |
+| `description` | Atualizado |
+| `date` | Atualizado |
+| `type` | Atualizado |
+| `category_id` | Preservado se o usuário já categorizou manualmente; sobrescrito pela IA apenas se `category_id` era `null` |
+
+> **Exemplo crítico:** Uma transação OFX do FITID `ABC123` foi importada anteriormente como cartão de crédito (`credit_card_id = 5`, `account_id = null`). Ao reimportar o mesmo OFX como extrato de conta bancária, o resultado deve ser: `account_id = 3`, `credit_card_id = null`, `billing_month = null`. O registro é atualizado, não duplicado.
+
+> **Exemplo inverso:** Transação importada como conta bancária (`account_id = 3`, `credit_card_id = null`) e reimportada como cartão de crédito: resultado final `credit_card_id = 5`, `account_id = null`, `billing_month = 'MM/YYYY'`.
+
+### 2.2 Implementação no banco
+
+```sql
+-- Supabase upsert com sobrescrita completa de source fields
+INSERT INTO transactions (
+  user_id, external_id, account_id, credit_card_id,
+  billing_month, amount, description, date, type, category_id
+)
+VALUES (...)
+ON CONFLICT (user_id, external_id)
+DO UPDATE SET
+  account_id      = EXCLUDED.account_id,
+  credit_card_id  = EXCLUDED.credit_card_id,
+  billing_month   = EXCLUDED.billing_month,
+  amount          = EXCLUDED.amount,
+  description     = EXCLUDED.description,
+  date            = EXCLUDED.date,
+  type            = EXCLUDED.type,
+  -- category_id preservado se já definido, atualizado apenas se era null
+  category_id     = COALESCE(transactions.category_id, EXCLUDED.category_id);
+```
 
 ---
 
@@ -65,20 +106,23 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  Itaú Corrente — 01/05/2026 a 31/05/2026                │
-├────────────┬───────────────────┬──────────┬─────────────┤
-│ Data       │ Descrição         │ Valor    │ Categoria   │
-├────────────┼───────────────────┼──────────┼─────────────┤
-│ 03/05/2026 │ Supermercado ABC  │ -R$85,00 │ Alimentação │
-│ 05/05/2026 │ Salário           │ +R$5.000  │ Renda       │
-└────────────┴───────────────────┴──────────┴─────────────┘
+├────────────┬───────────────────┬──────────┬─────────────┬──────────────┤
+│ Data       │ Descrição         │ Valor    │ Categoria   │ Status       │
+├────────────┼───────────────────┼──────────┼─────────────┼──────────────┤
+│ 03/05/2026 │ Supermercado ABC  │ -R$85,00 │ Alimentação │ 🔄 Atualizar │
+│ 05/05/2026 │ Salário           │ +R$5.000  │ Renda       │ ✨ Nova      │
+└────────────┴───────────────────┴──────────┴─────────────┴──────────────┘
 ```
 
 - Coluna de data visível com formato `DD/MM/AAAA`
 - Usuário pode editar descrição, tipo e categoria por linha
 - Botão "Categorizar com IA" disponível
-- Linhas já existentes no banco (mesma `external_id` OFX) ficam marcadas como "já importada" e desmarcadas por padrão
+- Coluna **Status** indica:
+  - `✨ Nova` — transação será inserida pela primeira vez
+  - `🔄 Atualizar` — `external_id` já existe; todos os campos serão sobrescritos (inclusive `account_id`/`credit_card_id`)
+  - Linhas marcadas como `🔄 Atualizar` ficam selecionadas por padrão — o usuário pode desmarcar para ignorar a atualização
 
-### Passo 3 — Confirmação
+### Passo 3 — Confirmação (Fluxo A)
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -86,10 +130,10 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
 │                                                │
 │  Conta:         Itaú Corrente                 │
 │  Período:       01/05/2026 – 31/05/2026       │
-│  Transações:    47 novas | 3 ignoradas        │
-│  ⚠ Exclusão:   12 transações existentes       │
-│                 de Maio/2026 serão excluídas  │
-│                 antes da importação            │
+│  Novas:         47 transações                 │
+│  Atualizadas:   3 transações (mesmo FITID)    │
+│    ↳ source alterado: cartão → conta          │
+│  Ignoradas:     0                             │
 │                                                │
 │  [ Cancelar ]          [ Confirmar ]          │
 └────────────────────────────────────────────────┘
@@ -107,17 +151,17 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
   - Inferência automática: se o cartão tiver `closing_day` configurado, o sistema calcula e pré-preenche o mês provável com base na data do arquivo
   - Usuário pode alterar se necessário
 
-### Passo 2 — Preview
+### Passo 2 — Preview (Fluxo B)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  Nubank Roxinho — Fatura Maio/2026                       │
-├───────────────────────────┬──────────────┬───────────────┤
-│ Descrição                 │ Valor        │ Categoria     │
-├───────────────────────────┼──────────────┼───────────────┤
-│ iFood                     │ -R$45,00     │ Alimentação   │
-│ Spotify                   │ -R$21,90     │ Assinatura    │
-└───────────────────────────┴──────────────┴───────────────┘
+├───────────────────────────┬──────────────┬───────────────┬──────────────┤
+│ Descrição                 │ Valor        │ Categoria     │ Status       │
+├───────────────────────────┼──────────────┼───────────────┼──────────────┤
+│ iFood                     │ -R$45,00     │ Alimentação   │ ✨ Nova      │
+│ Spotify                   │ -R$21,90     │ Assinatura    │ 🔄 Atualizar │
+└───────────────────────────┴──────────────┴───────────────┴──────────────┘
 ```
 
 - Coluna de data **não exibida** — todas pertencem à mesma fatura
@@ -125,8 +169,9 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
 - Tipo padrão de todas as transações: `card_payment` (pode ser ajustado pelo usuário ou pela IA)
 - Usuário pode editar descrição, tipo e categoria por linha
 - Botão "Categorizar com IA" disponível
+- Coluna **Status** indica `✨ Nova` ou `🔄 Atualizar` (mesmo comportamento do Fluxo A)
 
-### Passo 3 — Confirmação
+### Passo 3 — Confirmação (Fluxo B)
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -134,10 +179,10 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
 │                                                │
 │  Cartão:        Nubank Roxinho                │
 │  Fatura:        Maio/2026                     │
-│  Transações:    22 novas | 0 ignoradas        │
-│  ⚠ Exclusão:   22 transações existentes       │
-│                 da fatura Maio/2026 serão     │
-│                 excluídas antes da importação │
+│  Novas:         21 transações                 │
+│  Atualizadas:   1 transação (mesmo FITID)     │
+│    ↳ source alterado: conta → cartão          │
+│  Ignoradas:     0                             │
 │                                                │
 │  [ Cancelar ]          [ Confirmar ]          │
 └────────────────────────────────────────────────┘
@@ -155,7 +200,7 @@ Após a escolha, o usuário avança para o passo de upload correspondente ao tip
 | Mês de fatura | não se aplica | obrigatório |
 | Tipo padrão das transações | inferido | `card_payment` |
 | Inferência de mês | não | sim (via `closing_day`) |
-| Exclusão prévia por | `account_id` + mês de `date` | `credit_card_id` + `billing_month` |
+| Exclusão prévia por | não aplicável — usa upsert por `external_id` | não aplicável — usa upsert por `external_id` |
 
 ---
 
@@ -180,7 +225,11 @@ Campos necessários ao longo do fluxo:
 - [ ] Tela de importação sempre começa com a escolha do tipo (conta / cartão)
 - [ ] Fluxo A não exibe campo de mês de fatura
 - [ ] Fluxo B exige confirmação do mês de fatura antes de avançar
-- [ ] Antes de confirmar, o sistema informa quantidade total processada e ignorada/atualizada conforme `external_id`
-- [ ] Reimportações com mesmo `external_id` atualizam o registro existente em vez de duplicar
-- [ ] Estratégia de deduplicação por mês inteiro (`deleteByMonth`) não é obrigatória
+- [ ] Antes de confirmar, o sistema informa quantidade total de novas, atualizadas e ignoradas conforme `external_id`
+- [ ] Reimportações com mesmo `external_id` atualizam **todos os campos** do registro existente, incluindo `account_id`, `credit_card_id` e `billing_month`
+- [ ] Uma transação previamente importada como cartão pode ser reimportada como conta bancária: `credit_card_id` vira `null`, `account_id` é preenchido com o novo valor
+- [ ] Uma transação previamente importada como conta bancária pode ser reimportada como cartão: `account_id` vira `null`, `credit_card_id` e `billing_month` são preenchidos
+- [ ] `category_id` é preservado se já foi definido manualmente; sobrescrito pela IA somente se era `null`
+- [ ] Preview exibe coluna de status (`✨ Nova` / `🔄 Atualizar`) por linha
+- [ ] Estratégia de deduplicação por mês inteiro (`deleteByMonth`) não é utilizada
 - [ ] Preview mostra coluna de data no fluxo A e badge de fatura no fluxo B
