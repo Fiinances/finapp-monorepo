@@ -346,6 +346,24 @@
 - Em `mobile/src/screens/ImportScreen.tsx`, o container interno do `destinationModal` (ou o último elemento do `ScrollView`) deve aplicar um espaçamento inferior dinâmico (ex: `paddingBottom: Math.max(insets.bottom + 16, 16)`) para evitar que as opções finais fiquem escondidas pela barra de navegação nativa do Android.
 **Pronto quando:** Ao abrir a seleção de contas/cartões na importação, todas as opções estão perfeitamente visíveis e clicáveis acima da navbar do sistema operacional.
 
+#### Tarefa 18-M — Tela de Faturas de Cartões de Crédito
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/credit-card-bills.md`
+**Constrói:** `CreditCardBillsScreen.tsx`, gráfico de barras empilhadas e lista de transações vinculada.
+**Detalhes:**
+- Implementar gráfico onde as barras representam meses, divididas proporcionalmente por cartão (usando as cores dos cartões).
+- O gráfico deve calcular o valor líquido do mês (somando despesas e abatendo receitas/estornos).
+- Adicionar seletor de mês manual bidirecional ao gráfico.
+**Pronto quando:** O usuário conseguir navegar pelos meses, ver os gastos empilhados por cor de cartão e gerenciar as transações daquela fatura específica na lista inferior.
+
+#### Tarefa 18-N — Filtro de Cartões no Dashboard Principal
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/dashboard.md` (RN-09)
+**Constrói:** Atualização no `useDashboard.ts` (ou backend) para ignorar transações de cartão de crédito.
+**Detalhes:**
+- Garantir que `monthlyData` (MonthlyChart e Resumo) e `categorySlices` (CategoryChart) não contabilizem nenhuma transação onde `credit_card_id IS NOT NULL` quando acessados pela visão principal (sem filtro de conta/cartão).
+**Pronto quando:** Os gráficos e resumos do Dashboard Principal não incluírem mais os gastos do cartão de crédito, refletindo estritamente as movimentações das contas bancárias (e ignorando faturas até que sejam pagas).
+
 ---
 
 ### Fase 4: Testes e Validação E2E

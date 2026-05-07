@@ -56,7 +56,7 @@ Todos os componentes são reutilizáveis: recebem `accountId` e/ou `creditCardId
 ```
 PARA CADA transação no período:
   ym = parseYearMonth(t.date)    // YYYY-MM
-  SE type === 'transfer' OU 'card_payment' → IGNORA
+  SE type === 'transfer' OU credit_card_id IS NOT NULL → IGNORA
   SE type === 'income'       → grouped[ym].income += amount
   SE type === 'investment'   → grouped[ym].investment += amount
   SENÃO (expense)            → grouped[ym].expense += amount
@@ -198,6 +198,7 @@ interface AccountSubscriptionsCalendarProps {
 | RN-06 | `AccountSubscriptionsCalendar` retorna `null` se não há assinaturas | `AccountSubscriptionsCalendar.tsx:59` | 🟢 |
 | RN-07 | Anos disponíveis no seletor de CategoryExpenseChart: atual - 2, atual - 1, atual | `CategoryExpenseChart.tsx:67` | 🟢 |
 | RN-08 | Barras do MonthlyIncomeExpenseChart mostram meses zerados quando sem transações | Inicialização do `grouped` com zeros | 🟢 |
+| RN-09 | O Dashboard Principal deve ignorar sumariamente transações de cartão de crédito (`credit_card_id IS NOT NULL`) nos cálculos de despesas/receitas gerais (`MonthlyIncomeExpenseChart` e `CategoryExpenseChart`). | Filtros Globais | 🟢 |
 
 ---
 
