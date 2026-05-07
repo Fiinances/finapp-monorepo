@@ -17,6 +17,8 @@ interface AuthContextValue {
     signIn: (email: string, password: string) => Promise<{ error: string | null }>;
     signUp: (email: string, password: string) => Promise<{ error: string | null }>;
     signOut: () => Promise<void>;
+    sendPasswordOtp: (email: string) => Promise<{ error: string | null }>;
+    resetPasswordWithOtp: (email: string, otp: string, newPassword: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -52,6 +54,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut();
     }, []);
 
+    const sendPasswordOtp = useCallback(async (email: string) => {
+        const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false },
+        });
+        return { error: error?.message ?? null };
+    }, []);
+
+    const resetPasswordWithOtp = useCallback(async (email: string, otp: string, newPassword: string) => {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+            email,
+            token: otp,
+            type: 'email',
+        });
+        if (verifyError) return { error: verifyError.message };
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+        return { error: updateError?.message ?? null };
+    }, []);
+
     const value = useMemo(
         () => ({
             session,
@@ -60,8 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signIn,
             signUp,
             signOut,
+            sendPasswordOtp,
+            resetPasswordWithOtp,
         }),
-        [session, loading, signIn, signUp, signOut],
+        [session, loading, signIn, signUp, signOut, sendPasswordOtp, resetPasswordWithOtp],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

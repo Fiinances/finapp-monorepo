@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03 | **Atualizado em:** 2026-05-06
-**Status:** 36 tarefas | 22 concluídas | 14 pendentes
+**Status:** 37 tarefas | 23 concluídas | 14 pendentes
 
 ---
 
@@ -158,6 +158,20 @@
 - Substituído por `SafeAreaView` de `react-native-safe-area-context` (já presente no projeto via Expo)
 - Garante que título "Dashboard" e botão hamburguer ficam abaixo da barra de status (hora, bateria, rede) em iOS e Android
 **Pronto quando:** Header do Dashboard visível abaixo da status bar em ambas as plataformas.
+
+#### Tarefa 13-E — Recuperação de Senha via OTP (e-mail)
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/auth.md`
+**Constrói:** Fluxo completo de reset de senha sem infraestrutura extra — código numérico de 8 dígitos enviado pelo Supabase SMTP
+**Concluído:**
+- **`AuthContext`** — dois novos métodos: `sendPasswordOtp(email)` chama `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })`; `resetPasswordWithOtp(email, otp, newPassword)` chama `verifyOtp` + `updateUser` em sequência; interface `AuthContextValue` atualizada; ambos memoizados com `useCallback`; `shouldCreateUser: false` impede criação de conta para e-mails inexistentes (segurança)
+- **`types.ts`** — `AuthStackParamList` estendido com `ForgotPassword: undefined` e `ResetPassword: { email: string }`
+- **`ForgotPasswordScreen.tsx`** — tela criada em `mobile/src/screens/auth/`; campo de e-mail com validação Zod; chama `sendPasswordOtp(email)`; navega para `ResetPassword` passando `{ email }` nos params; link "Voltar" com ícone Feather `arrow-left`; erro inline abaixo do campo
+- **`ResetPasswordScreen.tsx`** — tela criada em `mobile/src/screens/auth/`; campo OTP com `keyboardType="number-pad"`, `maxLength={8}`, `placeholder="00000000"`; Zod `.length(8)`; campos nova senha + confirmar senha com Zod (min 8, maiúscula, número, match); barra de força de senha (4 níveis: Fraca/Média/Forte/Muito forte); chama `resetPasswordWithOtp`; sucesso → sessão criada automaticamente via `verifyOtp` → `onAuthStateChange` → `RootNavigator` abre Dashboard
+- **`AuthNavigator.tsx`** — duas novas rotas registradas: `ForgotPassword` e `ResetPassword`
+- **`LoginScreen.tsx`** — link "Esqueceu a senha? **Redefinir**" adicionado abaixo do link "Cadastrar"
+- **`RegisterScreen.tsx`** — `navigation.navigate('Login')` removido após cadastro bem-sucedido; redirecionamento agora feito automaticamente via `onAuthStateChange` → Dashboard
+**Pronto quando:** Usuário consegue redefinir senha pelo fluxo: ForgotPassword → código OTP no e-mail → ResetPassword → Dashboard; cadastro redireciona diretamente para Dashboard sem passar pelo Login.
 
 #### Tarefa 14 — Componentes Core: Listagem de Transações
 **Status:** ✅ done

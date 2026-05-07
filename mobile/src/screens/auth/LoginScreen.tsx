@@ -93,6 +93,18 @@ export function LoginScreen({ navigation }: Props) {
                         </Text>
                     </Text>
                 </Pressable>
+
+                <Pressable
+                    onPress={() => navigation.navigate('ForgotPassword')}
+                    className="mt-3 items-center"
+                >
+                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">
+                        Esqueceu a senha?{' '}
+                        <Text className="font-semibold text-[#6366f1]">
+                            Redefinir
+                        </Text>
+                    </Text>
+                </Pressable>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
