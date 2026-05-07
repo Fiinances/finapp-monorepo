@@ -263,17 +263,16 @@
 **Pronto quando:** As matrizes incluem os módulos mobile novos e deixam explícita a estratégia de fonte de verdade combinada.
 
 #### Tarefa 18-F — Upsert Completo de Transações na Reimportação (troca de source)
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/import-flows.md`, `_reversa_sdd/sdd/import.md`
-**Constrói:** Garantia de que o upsert por `external_id` sobrescreve **todos os campos relevantes** — incluindo `account_id`, `credit_card_id` e `billing_month` — permitindo que uma transação mude de cartão para conta bancária (e vice-versa) em reimportações
+**Constrói:** Garantia de que o upsert por `external_id` sobrescreve **todos os campos relevantes** e implementação de deduplicação no frontend para evitar erros de conflito múltiplo
 **Detalhes:**
-- Revisar a chamada Supabase `upsert` em `mobile/src/screens/ImportScreen.tsx` para garantir que todos os campos (`account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`) estão explicitamente listados no payload do upsert (Supabase `upsert` com `ignoreDuplicates: false` já atualiza o que for passado)
-- Garantir que quando o destino é conta bancária: `credit_card_id: null` e `billing_month: null` são passados explicitamente (não omitidos) para que sobrescrevam valores anteriores
-- Garantir que quando o destino é cartão: `account_id: null` é passado explicitamente
-- Preservar `category_id` existente: usar `COALESCE(transactions.category_id, EXCLUDED.category_id)` via Supabase RPC ou checar no frontend antes do upsert
-- Exibir na tela de preview coluna **Status** com `✨ Nova` / `🔄 Atualizar` por transação (requer pré-consulta de `external_id`s existentes antes de montar o preview)
-- Exibir no resumo de confirmação: quantas são novas, quantas serão atualizadas e quantas tiveram source alterado (cartão→conta ou conta→cartão)
-**Pronto quando:** Reimportação de OFX/CSV atualiza todos os campos da transação existente, incluindo mudança de fonte entre conta bancária e cartão de crédito, sem duplicatas; CAs 09, 10 e 11 de `import.md` passam.
+- **Deduplicação Client-side:** Antes de chamar o `upsert`, o array de transações deve ser filtrado para garantir que não existam dois itens com o mesmo `external_id`. Caso existam, preservar a última ocorrência. Isso evita o erro: `On Conflict Do Update command cannot affect row a second time`.
+- **Sobrescrita de campos:** Revisar a chamada Supabase `upsert` em `mobile/src/screens/ImportScreen.tsx` para garantir que todos os campos (`account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`) estão explicitamente listados no payload do upsert.
+- **Mudar Source:** Garantir que quando o destino é conta bancária: `credit_card_id: null` e `billing_month: null` são passados explicitamente. Quando o destino é cartão: `account_id: null` é passado explicitamente.
+- **Preservar Categoria:** Usar `existingTxMap` para manter o `category_id` se a transação já existia no banco e não foi alterada manualmente no preview.
+- **Feedback:** Exibir no resumo de confirmação: quantas são novas, quantas serão atualizadas e quantas tiveram source alterado.
+**Pronto quando:** Reimportação de OFX/CSV funciona mesmo com duplicatas no arquivo (deduplicadas no frontend); transações mudam de fonte sem duplicar; erro `On Conflict Do Update` não ocorre mais.
 
 #### Tarefa 18-G — Correções de Filtros, Schema e Formatação de Datas
 **Status:** ✅ done
@@ -338,6 +337,14 @@
 - **Inline em `ImportScreen`** — `useCategories` chamado no ImportScreen; `PreviewRow` exibe chip de categoria com ícone `tag`; Modal de seleção de categoria com opção "Sem categoria", lista e criação inline de nova categoria
 - **`TransactionsScreen`** — substituída derivação `useMemo` de categorias pelo `useCategories()` direto
 **Pronto quando:** Usuário pode criar/editar/excluir categorias na tela dedicada; pode criar categoria inline no formulário de transação e no fluxo de importação; lista de categorias carregada diretamente do Supabase.
+
+#### Tarefa 18-L — Ajuste de Safe Area no Modal de Destino (Importação)
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/import.md`
+**Constrói:** Inclusão de `paddingBottom` baseado em `insets.bottom` no `Modal` de seleção de destino.
+**Detalhes:**
+- Em `mobile/src/screens/ImportScreen.tsx`, o container interno do `destinationModal` (ou o último elemento do `ScrollView`) deve aplicar um espaçamento inferior dinâmico (ex: `paddingBottom: Math.max(insets.bottom + 16, 16)`) para evitar que as opções finais fiquem escondidas pela barra de navegação nativa do Android.
+**Pronto quando:** Ao abrir a seleção de contas/cartões na importação, todas as opções estão perfeitamente visíveis e clicáveis acima da navbar do sistema operacional.
 
 ---
 

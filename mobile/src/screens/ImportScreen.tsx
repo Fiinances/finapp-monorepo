@@ -124,8 +124,8 @@ export function ImportScreen() {
     // Category picker modal state
     const { categories, createCategory } = useCategories();
 
-    // Pre-fetched map of external_id → { category_id } for existing transactions
-    const [existingTxMap, setExistingTxMap] = useState<Map<string, { category_id: number | null }>>(new Map());
+    // Pre-fetched map of external_id → { category_id, account_id, credit_card_id } for existing transactions
+    const [existingTxMap, setExistingTxMap] = useState<Map<string, { category_id: number | null, account_id: number | null, credit_card_id: number | null }>>(new Map());
 
     // ── Load accounts & cards ─────────────────────────────────────────────────
     useEffect(() => {
@@ -196,20 +196,24 @@ export function ImportScreen() {
             const externalIds = rows
                 .map(r => r.external_id)
                 .filter((id): id is string => !!id);
-            let newExistingTxMap = new Map<string, { category_id: number | null }>();
+            let newExistingTxMap = new Map<string, { category_id: number | null, account_id: number | null, credit_card_id: number | null }>();
             if (externalIds.length > 0) {
                 const { data: { user: previewUser } } = await supabase.auth.getUser();
                 if (previewUser) {
                     const { data: existing } = await supabase
                         .from('transactions')
-                        .select('external_id, category_id')
+                        .select('external_id, category_id, account_id, credit_card_id')
                         .eq('user_id', previewUser.id)
                         .in('external_id', externalIds);
                     if (existing) {
                         newExistingTxMap = new Map(
                             existing.map(t => [
                                 t.external_id as string,
-                                { category_id: t.category_id as number | null },
+                                { 
+                                    category_id: t.category_id as number | null,
+                                    account_id: t.account_id as number | null,
+                                    credit_card_id: t.credit_card_id as number | null,
+                                },
                             ])
                         );
                     }
@@ -289,21 +293,54 @@ export function ImportScreen() {
             const cardId = isCard ? parseInt(accountId.slice(2), 10) : null;
             const acctId = !isCard ? parseInt(accountId.slice(2), 10) : null;
 
-            const upsertRows = previewRows.map(r => ({
-                user_id: user.id,
-                description: r.description,
-                amount: r.amount,
-                type: r.type,
-                date: r.date,
-                source: r.source,
-                external_id: r.external_id ?? null,
-                installment_number: r.installment_number ?? null,
-                // Preserve existing category_id if not manually set in this import
-                category_id: r.category_id ?? existingTxMap.get(r.external_id ?? '')?.category_id ?? null,
-                account_id: acctId,
-                credit_card_id: cardId,
-                billing_month: isCard ? billingMonth : null,
-            }));
+            // Deduplicate by external_id (keep last occurrence)
+            const deduplicatedMap = new Map<string, PreviewTransaction>();
+            for (const row of previewRows) {
+                if (row.external_id) {
+                    deduplicatedMap.set(row.external_id, row);
+                } else {
+                    deduplicatedMap.set(row._key, row);
+                }
+            }
+            const uniqueRows = Array.from(deduplicatedMap.values());
+
+            let newCount = 0;
+            let updateCount = 0;
+            let sourceChangeCount = 0;
+
+            const upsertRows = uniqueRows.map(r => {
+                const existing = r.external_id ? existingTxMap.get(r.external_id) : undefined;
+                
+                if (existing) {
+                    updateCount++;
+                    if (
+                        (isCard && existing.account_id != null) || 
+                        (!isCard && existing.credit_card_id != null) ||
+                        (isCard && existing.credit_card_id != null && existing.credit_card_id !== cardId) ||
+                        (!isCard && existing.account_id != null && existing.account_id !== acctId)
+                    ) {
+                        sourceChangeCount++;
+                    }
+                } else {
+                    newCount++;
+                }
+
+                return {
+                    user_id: user.id,
+                    description: r.description,
+                    amount: r.amount,
+                    type: r.type,
+                    date: r.date,
+                    source: r.source,
+                    external_id: r.external_id ?? null,
+                    installment_number: r.installment_number ?? null,
+                    // Preserve existing category_id if not manually set in this import
+                    category_id: r.category_id ?? existing?.category_id ?? null,
+                    account_id: acctId,
+                    credit_card_id: cardId,
+                    billing_month: isCard ? billingMonth : null,
+                };
+            });
 
             const { error: insertError } = await supabase
                 .from('transactions')
@@ -311,15 +348,13 @@ export function ImportScreen() {
 
             if (insertError) throw new Error(insertError.message);
 
-            // Feedback counts from importStatus pre-computed at preview time
-            const newCount = previewRows.filter(r => r.importStatus === 'new').length;
-            const updateCount = previewRows.filter(r => r.importStatus === 'update').length;
-            const totalProcessed = previewRows.length;
+            const totalProcessed = uniqueRows.length;
 
             const lines = [
                 `📥 Processadas: ${totalProcessed}`,
                 `✅ Novas: ${newCount}`,
                 ...(updateCount > 0 ? [`🔄 Atualizadas: ${updateCount}`] : []),
+                ...(sourceChangeCount > 0 ? [`   ↳ source alterado: ${sourceChangeCount}`] : []),
             ];
 
             Alert.alert(
@@ -922,6 +957,7 @@ function PreviewStep({
                         borderTopLeftRadius: 20,
                         borderTopRightRadius: 20,
                         padding: 16,
+                        paddingBottom: Math.max(insets.bottom + 16, 16),
                         maxHeight: '70%',
                         position: 'absolute',
                         bottom: 0,

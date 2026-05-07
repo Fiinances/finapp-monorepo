@@ -15,7 +15,7 @@ import {
     useColorScheme,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useBanks } from '@/hooks/useBanks';
 import { BankAccount, CreditCard } from '@/types';
@@ -594,6 +594,7 @@ function AddTypeSheet({
     textColor, labelColor, bgCard, borderColor, isDark,
 }: AddTypeSheetProps) {
     const { translateY, panHandlers } = useSwipeToDismiss(onClose, visible);
+    const insets = useSafeAreaInsets();
     const overlayBg = isDark ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.35)';
     const itemBg = isDark ? '#252d45' : '#f8f9fc';
     const accentBg = isDark ? '#2a2c4a' : '#ededff';
@@ -613,7 +614,7 @@ function AddTypeSheet({
                             borderTopLeftRadius: 24,
                             borderTopRightRadius: 24,
                             paddingTop: 12,
-                            paddingBottom: 36,
+                            paddingBottom: Math.max(insets.bottom, 16) + 16,
                             paddingHorizontal: 20,
                             transform: [{ translateY }],
                         }}
@@ -1005,6 +1006,7 @@ function AccountFormModal({
     textColor, labelColor, bgCard, inputBg, borderColor, isDark,
 }: AccountFormModalProps) {
     const { translateY, panHandlers } = useSwipeToDismiss(onClose, visible);
+    const insets = useSafeAreaInsets();
     const bgModal = isDark ? '#0f1117' : '#f5f6f8';
     const titleText = isEdit ? 'Editar Conta' : 'Nova Conta';
 
@@ -1018,7 +1020,7 @@ function AccountFormModal({
                     style={{
                         backgroundColor: bgCard,
                         borderTopLeftRadius: 20, borderTopRightRadius: 20,
-                        paddingTop: 12, paddingBottom: 32, paddingHorizontal: 20,
+                        paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16) + 16, paddingHorizontal: 20,
                         maxHeight: '90%',
                         transform: [{ translateY }],
                     }}
@@ -1142,6 +1144,7 @@ function CardFormModal({
     textColor, labelColor, bgCard, inputBg, borderColor, isDark,
 }: CardFormModalProps) {
     const { translateY, panHandlers } = useSwipeToDismiss(onClose, visible);
+    const insets = useSafeAreaInsets();
     const titleText = isEdit ? 'Editar Cartão' : 'Novo Cartão';
     const selectedAccountBg = isDark ? '#252d45' : '#f0f0ff';
 
@@ -1155,7 +1158,7 @@ function CardFormModal({
                     style={{
                         backgroundColor: bgCard,
                         borderTopLeftRadius: 20, borderTopRightRadius: 20,
-                        paddingTop: 12, paddingBottom: 32, paddingHorizontal: 20,
+                        paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16) + 16, paddingHorizontal: 20,
                         maxHeight: '90%',
                         transform: [{ translateY }],
                     }}

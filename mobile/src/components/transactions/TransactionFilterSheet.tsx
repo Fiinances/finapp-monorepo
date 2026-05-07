@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, TransactionType } from '@/types';
 import { ImportSource, TransactionFilters } from '@/hooks/useTransactionFilters';
 
@@ -71,6 +72,7 @@ function monthLabel(my: string): string {
 
 export function TransactionFilterSheet({ visible, filters, categories, onApply, onClose }: Props) {
     const isDark = useColorScheme() === 'dark';
+    const insets = useSafeAreaInsets();
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
     const bgSheet = isDark ? '#111827' : '#ffffff';
@@ -364,7 +366,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                     left: 0,
                     right: 0,
                     padding: 16,
-                    paddingBottom: 28,
+                    paddingBottom: Math.max(insets.bottom, 16) + 12,
                     backgroundColor: bgSheet,
                     borderTopWidth: 1,
                     borderTopColor: borderColor,

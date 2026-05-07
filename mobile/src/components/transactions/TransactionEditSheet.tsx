@@ -18,6 +18,7 @@ import {
     View,
 } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, Transaction, TransactionType } from '@/types';
 import { TYPE_COLORS, TYPE_LABELS } from '@/utils/transactions';
 
@@ -90,6 +91,7 @@ function parseInputAmount(raw: string): number | null {
 
 export function TransactionEditSheet({ visible, transaction, categories, saving = false, deleting = false, onSave, onDelete, onClose }: Props) {
     const isDark = useColorScheme() === 'dark';
+    const insets = useSafeAreaInsets();
 
     // Theme tokens
     const bgSheet = isDark ? '#111827' : '#ffffff';
@@ -500,7 +502,7 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
                         left: 0,
                         right: 0,
                         paddingHorizontal: 16,
-                        paddingBottom: Platform.OS === 'ios' ? 32 : 20,
+                        paddingBottom: insets.bottom + 16,
                         paddingTop: 12,
                         borderTopWidth: 1,
                         borderTopColor: borderColor,

@@ -16,7 +16,7 @@ import {
     useColorScheme,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useInstallments } from '@/hooks/useInstallments';
 import type { InstallmentGroup } from '@/types';
@@ -127,6 +127,7 @@ export function InstallmentsScreen() {
     const { openMenu } = useSideMenu();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const insets = useSafeAreaInsets();
 
     const bg = isDark ? '#0f1117' : '#f5f6f8';
     const bgCard = isDark ? '#1a1f2e' : '#ffffff';
@@ -504,7 +505,7 @@ export function InstallmentsScreen() {
                         </View>
 
                         <ScrollView
-                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom }}
                             keyboardShouldPersistTaps="handled"
                             showsVerticalScrollIndicator={false}
                         >

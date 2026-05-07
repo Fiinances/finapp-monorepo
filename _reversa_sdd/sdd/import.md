@@ -212,6 +212,8 @@ billingMonth: string     // MM/YYYY
 | RN-08 | `amount` sempre positivo — sinal determinado pelo `type` | `Math.abs(rawAmount)` | 🟢 |
 | RN-09 | `source` é fixo: `"csv"` ou `"ofx"` conforme o tipo de arquivo | `mapCsvToTransactions:71` | 🟢 |
 | RN-10 | `installment_number` é preenchido se padrão N/M detectado na descrição | `detectInstallment():63` | 🟢 |
+| RN-11 | **Deduplicação no Client-side**: Transações com o mesmo `external_id` dentro do mesmo arquivo devem ser consolidadas (preservando a última ocorrência) antes do `upsert` para evitar erro `ON CONFLICT DO UPDATE` no Postgres. | `confirmImport` | 🔴 |
+| RN-12 | **Safe Area (Modais/Sheets)**: O modal de destino (Destination Picker) e a lista de categorias devem incluir `paddingBottom` baseado em `insets.bottom` para evitar sobreposição da barra de navegação nativa do Android/iOS. | UI/UX | 🟢 |
 
 ---
 
@@ -235,6 +237,7 @@ interface ImportDropdownProps {
 | **Zero persistência sem confirmação** | Nada é salvo até o usuário clicar em "Importar N transações" | 🟢 |
 | **Extensibilidade de formatos** | `kind` é um enum — novos formatos podem ser adicionados com nova branch no `onSubmit` | 🟡 |
 | **Sem limite de transações** | Não há limit imposto no parsing — arquivos grandes podem travar a UI | 🔴 |
+| **Deduplicação Preventiva** | Remoção de duplicatas por `external_id` no frontend antes do envio ao Supabase | 🟢 |
 
 ---
 
