@@ -12,6 +12,7 @@ export type AppTabParamList = {
     More: undefined;
     Installments: undefined;
     Subscriptions: undefined;
+    CreditCardBills: undefined;
     Import: undefined;
     Categories: undefined;
 };

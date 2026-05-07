@@ -347,7 +347,7 @@
 **Pronto quando:** Ao abrir a seleção de contas/cartões na importação, todas as opções estão perfeitamente visíveis e clicáveis acima da navbar do sistema operacional.
 
 #### Tarefa 18-M — Tela de Faturas de Cartões de Crédito
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/credit-card-bills.md`
 **Constrói:** `CreditCardBillsScreen.tsx`, gráfico de barras empilhadas e lista de transações vinculada.
 **Detalhes:**

@@ -223,6 +223,14 @@ export function SideMenu({ visible, onClose, currentRoute }: SideMenuProps) {
                         active={currentRoute === 'Banks'}
                     />
                     <MenuItem
+                        icon="file-text"
+                        label="Faturas"
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('CreditCardBills'), 250); }}
+                        textPrimary={textPrimary}
+                        bgActive={bgItemActive}
+                        active={currentRoute === 'CreditCardBills'}
+                    />
+                    <MenuItem
                         icon="repeat"
                         label="Parcelamentos"
                         onPress={() => { onClose(); setTimeout(() => navigation.navigate('Installments'), 250); }}
