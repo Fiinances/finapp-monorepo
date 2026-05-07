@@ -228,6 +228,189 @@ Então: "Alimentação" aparece na lista
        usuário seleciona → draft.category_id = 1
 ```
 
+---
+
+## 13. Implementação Mobile — Modelo Global/Por-Usuário
+
+> **Adicionado em 2026-05-06** | Implementação: `mobile/src/screens/CategoriesScreen.tsx`, `mobile/src/hooks/useCategories.ts`, `mobile/src/types/index.ts`
+> Migration aplicada: `20260507_categories_global_redesign` (Supabase)
+
+---
+
+### 13.1 Motivação
+
+O modelo legado Electron criava ~50 categorias por usuário via trigger `on_auth_user_created_seed_categories` a cada novo cadastro. Isso gerou redundância massiva de dados e impossibilitava atualizações centralizadas da lista padrão.
+
+O modelo mobile substitui isso por **categorias globais** (compartilhadas, somente leitura para usuários) + **categorias próprias** (criadas pelo usuário, CRUD completo).
+
+---
+
+### 13.2 Schema — Supabase PostgreSQL
+
+```sql
+CREATE TABLE transaction_categories (
+  id         SERIAL PRIMARY KEY,
+  user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+                                         -- NULL = categoria global (somente leitura para usuários)
+                                         -- UUID = categoria própria do usuário
+  name       TEXT    NOT NULL,
+  color      TEXT,                       -- hex color, nullable
+  icon       TEXT,                       -- nome de ícone, nullable
+  type       TEXT,                       -- 'income' | 'expense' | NULL
+  parent_id  INTEGER REFERENCES transaction_categories(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Diferença chave em relação ao legado:** `user_id` é nullable. `NULL` identifica categorias globais gerenciadas pelo sistema.
+
+---
+
+### 13.3 Políticas RLS (Row Level Security)
+
+| Policy | Operação | Condição |
+|---|---|---|
+| `categories: read global and own` | SELECT | `user_id IS NULL OR auth.uid() = user_id` |
+| `categories: insert own` | INSERT | `auth.uid() = user_id` |
+| `categories: update own` | UPDATE | `auth.uid() = user_id` |
+| `categories: delete own` | DELETE | `auth.uid() = user_id` |
+
+> ✅ As políticas de escrita exigem `user_id = auth.uid()`, tornando impossível — por design — que um usuário modifique ou exclua categorias globais (`user_id IS NULL`) diretamente no banco.
+
+---
+
+### 13.4 Seed de Categorias Globais (51 registros)
+
+Seeded via migration `categories_global_redesign`. Todas com `user_id = NULL`.
+
+**Categorias pai — Despesas:**
+
+| Nome | Cor |
+|---|---|
+| Alimentação | `#f97316` |
+| Transporte | `#3b82f6` |
+| Moradia | `#8b5cf6` |
+| Saúde | `#ef4444` |
+| Educação | `#06b6d4` |
+| Lazer | `#ec4899` |
+| Roupas | `#f59e0b` |
+| Financeiro | `#6366f1` |
+| Outros | `#6b7280` |
+
+**Categorias pai — Receitas:**
+
+| Nome | Cor |
+|---|---|
+| Salário | `#22c55e` |
+| Investimentos | `#10b981` |
+| Outras Receitas | `#84cc16` |
+
+**Subcategorias:** Alimentação (5), Transporte (5), Moradia (6), Saúde (4), Educação (3), Lazer (4), Financeiro (3), Salário (4), Investimentos (3), Outras Receitas (2).
+
+> Trigger e funções de seed por usuário (`handle_new_user_categories`, `seed_default_categories_for_user`) foram removidos.
+
+---
+
+### 13.5 Tipo `Category` — Mobile
+
+`mobile/src/types/index.ts`
+
+```typescript
+export interface Category {
+  id: number;
+  user_id?: string | null;   // NULL = global (somente leitura); UUID = própria do usuário
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  type?: TransactionType | null;
+  parent_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+```
+
+---
+
+### 13.6 Hook `useCategories` — Comportamento
+
+`mobile/src/hooks/useCategories.ts`
+
+- `loadAll()`: `select('*').order('name')` — RLS retorna automaticamente globais + próprias do usuário autenticado
+- `createCategory(data)`: insere `{ ...data, user_id: session.user.id }` — sempre cria como categoria própria
+- `updateCategory(id, data)`: RLS bloqueia update em globais no servidor
+- `deleteCategory(id)`: RLS bloqueia delete em globais no servidor
+
+---
+
+### 13.7 UI — `CategoriesScreen.tsx`
+
+**Regras visuais e de interação:**
+
+| Situação | Comportamento |
+|---|---|
+| `category.user_id == null` (global) | `TouchableOpacity.onPress = undefined`, `activeOpacity = 1` (sem feedback de toque) |
+| Global — indicador | Ícone `lock` (Feather, 12px) + badge texto `"Global"` no lugar do chevron |
+| `category.user_id != null` (própria) | Comportamento normal: toque abre bottom sheet de edição |
+| Própria — indicador | `chevron-right` (Feather, 15px) |
+
+**Proteção em `openSheet`:**
+```typescript
+const openSheet = (target: Category | null) => {
+    if (target && target.user_id == null) return; // bloqueia edição de globais
+    setEditTarget(target);
+    // ...
+};
+```
+
+---
+
+### 13.8 Regras de Negócio — Mobile
+
+| ID | Regra | Localização | Confiança |
+|---|---|---|---|
+| RN-M01 | Categorias globais (`user_id IS NULL`) são visíveis a todos os usuários | RLS SELECT policy | 🟢 |
+| RN-M02 | Categorias globais não podem ser editadas nem excluídas por usuários | RLS UPDATE/DELETE policies | 🟢 |
+| RN-M03 | Novas categorias criadas pelo usuário sempre recebem `user_id = auth.uid()` | `useCategories.createCategory` | 🟢 |
+| RN-M04 | UI bloqueia abertura do sheet de edição para categorias globais (double protection) | `CategoriesScreen.openSheet` | 🟢 |
+| RN-M05 | Categorias globais exibem badge `"Global"` com ícone de cadeado | `CategoriesScreen.CategoryRow` | 🟢 |
+| RN-M06 | `loadAll` retorna globais + próprias ordenadas por nome, sem distinção explícita | `useCategories.loadAll` | 🟢 |
+| RN-M07 | Hierarquia (`parent_id`) suportada no schema; UI não expõe filtro por nível | Schema + UI review | 🟡 |
+| RN-M08 | Não há validação de nomes duplicados entre categorias próprias | Ausência de constraint | 🟡 |
+
+---
+
+### 13.9 Critérios de Aceitação — Mobile
+
+#### CA-M01 — Visualizar categorias globais
+
+```
+Dado:  usuário autenticado acessa CategoriesScreen
+Quando: loadAll() é chamado
+Então: 51 categorias globais aparecem na lista
+       cada uma exibe badge "Global" com ícone de cadeado
+       toque nas globais não abre nenhum sheet
+```
+
+#### CA-M02 — Criar categoria própria
+
+```
+Dado:  usuário toca no botão "+"
+Quando: preenche nome, cor e tipo e confirma
+Então: categoria é inserida com user_id = auth.uid()
+       aparece na lista misturada com as globais (ordenação por nome)
+       exibe chevron-right (editável)
+```
+
+#### CA-M03 — Proteção contra edição de global (server-side)
+
+```
+Dado:  cliente tenta UPDATE/DELETE em categoria com user_id IS NULL
+Quando: RLS policy "categories: update own" / "categories: delete own" é avaliada
+Então: operação é rejeitada pelo Supabase (RLS violation)
+       0 rows affected
+```
+
 ### CA-03 — Categoria deletada desvincula transações
 
 ```

@@ -7,6 +7,7 @@ export type TransactionType =
 
 export interface Category {
     id: number;
+    user_id?: string | null;   // NULL = global category (visible to all, non-editable by users)
     name: string;
     color?: string | null;
     icon?: string | null;

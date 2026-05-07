@@ -89,6 +89,8 @@ export function CategoriesScreen() {
     const onCloseRef = useRef<(() => void) | null>(null);
 
     const openSheet = (target: Category | null) => {
+        // Global categories (user_id === null) cannot be edited by users
+        if (target && target.user_id == null) return;
         setEditTarget(target);
         if (target) {
             setFormName(target.name);
@@ -121,7 +123,8 @@ export function CategoriesScreen() {
 
     const panResponder = useRef(
         PanResponder.create({
-            onMoveShouldSetPanResponder: (_, gs) => gs.dy > 10,
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gs) => gs.dy > 4,
             onPanResponderMove: (_, gs) => {
                 if (gs.dy > 0) translateY.setValue(gs.dy);
             },
@@ -270,7 +273,7 @@ export function CategoriesScreen() {
                             overflow: 'hidden',
                         }}
                     >
-                        {/* Drag handle */}
+                        {/* Drag handle — swipe down to close */}
                         <View
                             {...panResponder.panHandlers}
                             style={{ alignItems: 'center', paddingVertical: 14 }}
@@ -322,11 +325,12 @@ interface CategoryRowProps {
 function CategoryRow({ category, cardBg, textPrimary, textMuted, borderColor, accent, onPress }: CategoryRowProps) {
     const dotColor = category.color ?? accent;
     const typeLabel = TYPE_OPTIONS.find(o => o.value === category.type)?.label;
+    const isGlobal = category.user_id == null;
 
     return (
         <TouchableOpacity
-            onPress={onPress}
-            activeOpacity={0.75}
+            onPress={isGlobal ? undefined : onPress}
+            activeOpacity={isGlobal ? 1 : 0.75}
             style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -364,7 +368,14 @@ function CategoryRow({ category, cardBg, textPrimary, textMuted, borderColor, ac
                     </Text>
                 </View>
             )}
-            <Feather name="chevron-right" size={15} color={textMuted} />
+            {isGlobal ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Feather name="lock" size={12} color={textMuted} />
+                    <Text style={{ fontSize: 11, color: textMuted, fontWeight: '500' }}>Global</Text>
+                </View>
+            ) : (
+                <Feather name="chevron-right" size={15} color={textMuted} />
+            )}
         </TouchableOpacity>
     );
 }

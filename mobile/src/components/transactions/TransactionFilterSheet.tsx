@@ -189,7 +189,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                 {/* Drag handle — swipe down to close */}
                 <View
                     {...panResponder.panHandlers}
-                    style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}
+                    style={{ alignItems: 'center', paddingVertical: 14 }}
                 >
                     <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: handleColor }} />
                 </View>

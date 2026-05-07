@@ -101,7 +101,8 @@ function useSwipeToDismiss(onClose: () => void) {
 
     const panResponder = useRef(
         PanResponder.create({
-            onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, g) => g.dy > 4,
             onPanResponderMove: (_, g) => {
                 if (g.dy > 0) translateY.setValue(g.dy);
             },
@@ -482,8 +483,8 @@ export function InstallmentsScreen() {
                             transform: [{ translateY }],
                         }}
                     >
-                        {/* Drag handle */}
-                        <View {...panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+                        {/* Drag handle — swipe down to close */}
+                        <View {...panHandlers} style={{ alignItems: 'center', paddingVertical: 14 }}>
                             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: borderColor }} />
                         </View>
 

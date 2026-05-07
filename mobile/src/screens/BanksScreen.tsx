@@ -623,7 +623,7 @@ function AddTypeSheet({
                             {...panHandlers}
                             style={{
                                 alignSelf: 'center',
-                                paddingVertical: 10,
+                                paddingVertical: 14,
                                 paddingHorizontal: 40,
                                 marginBottom: 12,
                             }}
@@ -637,7 +637,7 @@ function AddTypeSheet({
                             />
                         </View>
 
-                        {/* Title row */}
+                        {/* Title row */}}
                         <View
                             style={{
                                 flexDirection: 'row',
@@ -1028,7 +1028,7 @@ function AccountFormModal({
                         {...panHandlers}
                         style={{
                             alignSelf: 'center',
-                            paddingVertical: 10,
+                            paddingVertical: 14,
                             paddingHorizontal: 40,
                             marginBottom: 10,
                         }}
@@ -1165,7 +1165,7 @@ function CardFormModal({
                         {...panHandlers}
                         style={{
                             alignSelf: 'center',
-                            paddingVertical: 10,
+                            paddingVertical: 14,
                             paddingHorizontal: 40,
                             marginBottom: 10,
                         }}
