@@ -357,7 +357,7 @@
 **Pronto quando:** O usuário conseguir navegar pelos meses, ver os gastos empilhados por cor de cartão e gerenciar as transações daquela fatura específica na lista inferior.
 
 #### Tarefa 18-N — Filtro de Cartões no Dashboard Principal
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/dashboard.md` (RN-09)
 **Constrói:** Atualização no `useDashboard.ts` (ou backend) para ignorar transações de cartão de crédito.
 **Detalhes:**

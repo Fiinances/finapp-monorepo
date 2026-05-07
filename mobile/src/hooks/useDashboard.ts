@@ -110,6 +110,7 @@ export function useDashboard(): DashboardData {
             const { data: txData, error: txErr } = await supabase
                 .from('transactions')
                 .select('*, category:transaction_categories(*)')
+                .is('credit_card_id', null) // RN-09: Ignorar cartões no Dashboard
                 .gte('date', from)
                 .order('date', { ascending: true });
 
@@ -136,7 +137,7 @@ export function useDashboard(): DashboardData {
         fetchAll();
     }, [fetchAll]);
 
-    // --- Monthly bar data (RN-01: exclude transfer/card_payment; RN-02: investment not in net) ---
+    // --- Monthly bar data (RN-01: exclude transfer/card_payment; RN-02: investment not in net; RN-09: no credit cards) ---
     const monthlyData: MonthlyBarData[] = keys.map((monthYear) => {
         const filtered = transactions.filter(
             (t) =>
