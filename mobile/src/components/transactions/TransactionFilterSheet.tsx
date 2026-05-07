@@ -7,6 +7,7 @@ import {
     PanResponder,
     ScrollView,
     Text,
+    TextInput,
     TouchableOpacity,
     useColorScheme,
     View,
@@ -14,7 +15,7 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Category, TransactionType } from '@/types';
-import { ImportSource, TransactionFilters } from '@/hooks/useTransactionFilters';
+import { TransactionFilters } from '@/hooks/useTransactionFilters';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,18 +29,12 @@ interface Props {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Card_payment and credit_card types removed — those live in the Bills screen
 const TYPES: { value: TransactionType; label: string; icon: string }[] = [
     { value: 'income', label: 'Entrada', icon: 'arrow-down-left' },
     { value: 'expense', label: 'Saída', icon: 'arrow-up-right' },
     { value: 'transfer', label: 'Transf.', icon: 'repeat' },
     { value: 'investment', label: 'Invest.', icon: 'trending-up' },
-    { value: 'card_payment', label: 'Fatura', icon: 'credit-card' },
-];
-
-const ORIGINS: { value: ImportSource; label: string }[] = [
-    { value: 'all', label: 'Todas' },
-    { value: 'bank_account', label: 'Conta' },
-    { value: 'credit_card', label: 'Cartão' },
 ];
 
 const { height: SCREEN_H } = Dimensions.get('window');
@@ -76,14 +71,14 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
     const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
     const labelColor = isDark ? '#9ca3af' : '#6b7280';
     const bgSheet = isDark ? '#111827' : '#ffffff';
-    const pillBg = isDark ? '#1e2433' : '#f3f4f6';
+    const bgInput = isDark ? '#1e2433' : '#f3f4f6';
     const pillActiveBg = '#6366f1';
     const borderColor = isDark ? '#1e2433' : '#e5e7eb';
     const handleColor = isDark ? '#374151' : '#d1d5db';
+    const accent = '#6366f1';
 
     const slideAnim = useRef(new Animated.Value(SHEET_H)).current;
 
-    // Keep a stable ref to onClose so the PanResponder closure is never stale
     const onCloseRef = useRef(onClose);
     useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
@@ -116,9 +111,15 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
     // local draft state (only committed on Apply)
     const [draft, setDraft] = useState<TransactionFilters>(filters);
 
+    // Category autocomplete state
+    const [catQuery, setCatQuery] = useState('');
+    const [catOpen, setCatOpen] = useState(false);
+
     useEffect(() => {
         if (visible) {
             setDraft(filters);
+            setCatQuery('');
+            setCatOpen(false);
             Animated.spring(slideAnim, {
                 toValue: 0,
                 damping: 24,
@@ -142,6 +143,8 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
     function handleClear() {
         const defaultMonth = currentMonthYear();
         setDraft({ month: defaultMonth, types: [], categoryIds: [], importSource: 'all' });
+        setCatQuery('');
+        setCatOpen(false);
     }
 
     function toggleType(type: TransactionType) {
@@ -151,19 +154,44 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
         });
     }
 
-    function toggleCategory(id: number | 'uncategorized') {
+    function selectCategory(id: number | 'uncategorized') {
         setDraft((d) => {
-            const exists = d.categoryIds.includes(id);
-            return {
-                ...d,
-                categoryIds: exists ? d.categoryIds.filter((c) => c !== id) : [...d.categoryIds, id],
-            };
+            if (d.categoryIds.includes(id)) return d; // already selected
+            return { ...d, categoryIds: [...d.categoryIds, id] };
         });
+        setCatQuery('');
+        setCatOpen(false);
+    }
+
+    function removeCategory(id: number | 'uncategorized') {
+        setDraft((d) => ({ ...d, categoryIds: d.categoryIds.filter((c) => c !== id) }));
     }
 
     const maxMonth = currentMonthYear();
     const displayMonth = draft.month ?? currentMonthYear();
     const isAtMax = displayMonth >= maxMonth;
+
+    // Filtered category suggestions (exclude already selected)
+    const catFiltered = categories.filter((c) => {
+        const matchesQuery = catQuery.trim()
+            ? c.name.toLowerCase().includes(catQuery.trim().toLowerCase())
+            : true;
+        const notSelected = !draft.categoryIds.includes(c.id);
+        return matchesQuery && notSelected;
+    });
+
+    const uncategorizedSelected = draft.categoryIds.includes('uncategorized');
+
+    // Resolve display name for a selected categoryId
+    function getCatLabel(id: number | 'uncategorized'): string {
+        if (id === 'uncategorized') return 'Sem categoria';
+        return categories.find((c) => c.id === id)?.name ?? `#${id}`;
+    }
+
+    function getCatColor(id: number | 'uncategorized'): string {
+        if (id === 'uncategorized') return labelColor;
+        return categories.find((c) => c.id === id)?.color ?? accent;
+    }
 
     return (
         <Modal transparent animationType="none" visible={visible} onRequestClose={onClose}>
@@ -210,7 +238,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                         Filtrar transações
                     </Text>
                     <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Text style={{ color: '#6366f1', fontSize: 14, fontWeight: '600' }}>Limpar tudo</Text>
+                        <Text style={{ color: accent, fontSize: 14, fontWeight: '600' }}>Limpar tudo</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -218,6 +246,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                     style={{ flex: 1 }}
                     contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 100 }}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                 >
                     {/* ── Mês ── */}
                     <Text style={{ color: labelColor, fontSize: 12, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -227,7 +256,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backgroundColor: pillBg,
+                        backgroundColor: bgInput,
                         borderRadius: 12,
                         paddingHorizontal: 12,
                         paddingVertical: 10,
@@ -270,7 +299,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                                         paddingHorizontal: 12,
                                         paddingVertical: 8,
                                         borderRadius: 20,
-                                        backgroundColor: active ? pillActiveBg : pillBg,
+                                        backgroundColor: active ? pillActiveBg : bgInput,
                                     }}
                                 >
                                     <Feather name={icon as any} size={13} color={active ? '#ffffff' : labelColor} />
@@ -282,81 +311,131 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                         })}
                     </View>
 
-                    {/* ── Categoria ── */}
+                    {/* ── Categoria (autocomplete) ── */}
                     {categories.length > 0 && (
                         <>
                             <Text style={{ color: labelColor, fontSize: 12, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                 Categoria
                             </Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                                <TouchableOpacity
-                                    onPress={() => toggleCategory('uncategorized')}
-                                    style={{
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 8,
-                                        borderRadius: 20,
-                                        backgroundColor: draft.categoryIds.includes('uncategorized') ? pillActiveBg : pillBg,
-                                    }}
-                                >
-                                    <Text style={{
-                                        fontSize: 13,
-                                        color: draft.categoryIds.includes('uncategorized') ? '#ffffff' : textColor,
-                                        fontWeight: draft.categoryIds.includes('uncategorized') ? '600' : '400',
-                                    }}>
-                                        Sem categoria
-                                    </Text>
-                                </TouchableOpacity>
-                                {categories.map((cat) => {
-                                    const active = draft.categoryIds.includes(cat.id);
-                                    return (
+
+                            {/* Selected category chips */}
+                            {draft.categoryIds.length > 0 && (
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                                    {draft.categoryIds.map((id) => (
                                         <TouchableOpacity
-                                            key={cat.id}
-                                            onPress={() => toggleCategory(cat.id)}
+                                            key={id}
+                                            onPress={() => removeCategory(id)}
                                             style={{
                                                 flexDirection: 'row',
                                                 alignItems: 'center',
                                                 gap: 6,
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 8,
+                                                paddingHorizontal: 10,
+                                                paddingVertical: 6,
                                                 borderRadius: 20,
-                                                backgroundColor: active ? (cat.color ?? pillActiveBg) : pillBg,
+                                                backgroundColor: `${getCatColor(id)}22`,
+                                                borderWidth: 1,
+                                                borderColor: getCatColor(id),
                                             }}
                                         >
-                                            <Text style={{ fontSize: 13, color: active ? '#ffffff' : textColor, fontWeight: active ? '600' : '400' }}>
-                                                {cat.name}
+                                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: getCatColor(id) }} />
+                                            <Text style={{ fontSize: 12, fontWeight: '600', color: getCatColor(id) }}>
+                                                {getCatLabel(id)}
                                             </Text>
+                                            <Feather name="x" size={11} color={getCatColor(id)} />
                                         </TouchableOpacity>
-                                    );
-                                })}
+                                    ))}
+                                </View>
+                            )}
+
+                            {/* Autocomplete input */}
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: bgInput,
+                                borderRadius: 12,
+                                paddingHorizontal: 12,
+                                borderWidth: 1.5,
+                                borderColor: catOpen ? accent : 'transparent',
+                                marginBottom: catOpen ? 0 : 20,
+                            }}>
+                                <Feather name="search" size={15} color={labelColor} />
+                                <TextInput
+                                    value={catQuery}
+                                    onChangeText={(v) => { setCatQuery(v); setCatOpen(true); }}
+                                    onFocus={() => setCatOpen(true)}
+                                    onBlur={() => setTimeout(() => setCatOpen(false), 150)}
+                                    placeholder="Buscar categoria..."
+                                    placeholderTextColor={labelColor}
+                                    style={{ flex: 1, color: textColor, fontSize: 14, paddingVertical: 11, marginLeft: 8 }}
+                                />
+                                {catQuery.length > 0 && (
+                                    <TouchableOpacity
+                                        onPress={() => { setCatQuery(''); setCatOpen(true); }}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    >
+                                        <Feather name="x" size={15} color={labelColor} />
+                                    </TouchableOpacity>
+                                )}
                             </View>
+
+                            {/* Dropdown suggestions */}
+                            {catOpen && (
+                                <View style={{
+                                    backgroundColor: isDark ? '#1e2433' : '#f9fafb',
+                                    borderRadius: 12,
+                                    marginTop: 4,
+                                    marginBottom: 20,
+                                    overflow: 'hidden',
+                                    borderWidth: 1,
+                                    borderColor: borderColor,
+                                }}>
+                                    {/* "Sem categoria" option */}
+                                    {!uncategorizedSelected && (catQuery.trim() === '' || 'sem categoria'.includes(catQuery.toLowerCase())) && (
+                                        <TouchableOpacity
+                                            onPress={() => selectCategory('uncategorized')}
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                paddingHorizontal: 14,
+                                                paddingVertical: 11,
+                                                borderBottomWidth: catFiltered.length > 0 ? 1 : 0,
+                                                borderBottomColor: borderColor,
+                                            }}
+                                        >
+                                            <Feather name="slash" size={14} color={labelColor} />
+                                            <Text style={{ fontSize: 14, color: labelColor }}>Sem categoria</Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {catFiltered.map((cat, idx) => (
+                                        <TouchableOpacity
+                                            key={cat.id}
+                                            onPress={() => selectCategory(cat.id)}
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                paddingHorizontal: 14,
+                                                paddingVertical: 11,
+                                                borderBottomWidth: idx < catFiltered.length - 1 ? 1 : 0,
+                                                borderBottomColor: borderColor,
+                                            }}
+                                        >
+                                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: cat.color ?? accent }} />
+                                            <Text style={{ flex: 1, fontSize: 14, color: textColor }}>{cat.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+
+                                    {catFiltered.length === 0 && uncategorizedSelected && catQuery.trim().length > 0 && (
+                                        <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
+                                            <Text style={{ fontSize: 14, color: labelColor }}>Nenhuma categoria encontrada</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
                         </>
                     )}
-
-                    {/* ── Origem ── */}
-                    <Text style={{ color: labelColor, fontSize: 12, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Origem
-                    </Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-                        {ORIGINS.map(({ value, label }) => {
-                            const active = draft.importSource === value;
-                            return (
-                                <TouchableOpacity
-                                    key={value}
-                                    onPress={() => setDraft((d) => ({ ...d, importSource: value }))}
-                                    style={{
-                                        paddingHorizontal: 14,
-                                        paddingVertical: 8,
-                                        borderRadius: 20,
-                                        backgroundColor: active ? pillActiveBg : pillBg,
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 13, color: active ? '#ffffff' : textColor, fontWeight: active ? '600' : '400' }}>
-                                        {label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
                 </ScrollView>
 
                 {/* Apply button — absolute at bottom */}
@@ -374,7 +453,7 @@ export function TransactionFilterSheet({ visible, filters, categories, onApply, 
                     <TouchableOpacity
                         onPress={handleApply}
                         style={{
-                            backgroundColor: '#6366f1',
+                            backgroundColor: accent,
                             borderRadius: 12,
                             paddingVertical: 14,
                             alignItems: 'center',

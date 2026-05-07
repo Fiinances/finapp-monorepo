@@ -364,6 +364,27 @@
 - Garantir que `monthlyData` (MonthlyChart e Resumo) e `categorySlices` (CategoryChart) não contabilizem nenhuma transação onde `credit_card_id IS NOT NULL` quando acessados pela visão principal (sem filtro de conta/cartão).
 **Pronto quando:** Os gráficos e resumos do Dashboard Principal não incluírem mais os gastos do cartão de crédito, refletindo estritamente as movimentações das contas bancárias (e ignorando faturas até que sejam pagas).
 
+#### Tarefa 18-O — Componente BulkDeleteSheet
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/bulk-delete.md`
+**Constrói:** `components/ui/BulkDeleteSheet.tsx` — bottom sheet de confirmação reutilizável para exclusões em lote.
+**Detalhes:**
+- Componente com título, descrição (contagem de itens), botão "Excluir tudo" (vermelho, com loading) e botão "Cancelar".
+- Respeita `useSafeAreaInsets` para paddingBottom (evitar sobreposição com navbar Android).
+- Props: `visible`, `title`, `description`, `loading`, `onConfirm`, `onClose`.
+**Pronto quando:** Bottom sheet aparece, exibe os textos corretamente, botão confirmar dispara onConfirm com feedback de loading e botão cancelar fecha sem ação.
+
+#### Tarefa 18-P — Exclusão em Lote nas Telas
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/bulk-delete.md`
+**Constrói:** Integração do `BulkDeleteSheet` na `CreditCardBillsScreen` e na `TransactionsScreen` com menu `⋮` contextual.
+**Detalhes:**
+- `CreditCardBillsScreen`: botão `⋮` no header → "Excluir fatura de [Mês]" → confirma → deleta transações de cartão do mês via Supabase → refetch.
+- `TransactionsScreen`: botão `⋮` aparece somente quando `filters.month` está ativo → "Excluir transações de [Mês]" → confirma → deleta transações do período → refetch.
+- Contagem de itens exibida no `BulkDeleteSheet` antes de confirmar.
+- Caso não haja itens, Alert informativo sem executar a query.
+**Pronto quando:** (A) Usuário exclui fatura inteira do cartão com atualização do gráfico; (B) Usuário com filtro de mês ativo exclui transações bancárias do mês; (C) sem filtro de mês, opção não aparece na TransactionsScreen.
+
 ---
 
 ### Fase 4: Testes e Validação E2E

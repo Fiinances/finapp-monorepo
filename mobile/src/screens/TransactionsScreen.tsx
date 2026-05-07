@@ -11,13 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionCreateSheet, TransactionEditSheet, TransactionFilterSheet, TransactionList } from '@/components/transactions';
 import type { TransactionCreate } from '@/components/transactions';
-import { AppHeader } from '@/components/ui';
+import { AppHeader, BulkDeleteSheet } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useBanks } from '@/hooks/useBanks';
 import { useCategories } from '@/hooks/useCategories';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Category, Transaction } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { Transaction } from '@/types';
 
 function monthLabelShort(my: string): string {
     if (!my) return '';
@@ -45,9 +47,15 @@ export function TransactionsScreen() {
     const { transactions: allTransactions, loading, refetch, updateTransaction, deleteTransaction, createTransaction } = useTransactions();
     const { accounts, creditCards } = useBanks();
     const { categories, createCategory } = useCategories();
+    const { user } = useAuth();
+
+    const [bulkDeleteVisible, setBulkDeleteVisible] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
 
     const transactions = useMemo(() => {
         return allTransactions.filter((t) => {
+            // Exibe apenas transações bancárias — cartões têm tela própria (Faturas)
+            if (t.credit_card_id != null) return false;
             const txMonth = t.billing_month ?? (() => {
                 const m = t.date.match(/^(\d{4})-(\d{2})/);
                 return m ? `${m[2]}/${m[1]}` : '';
@@ -102,6 +110,38 @@ export function TransactionsScreen() {
         }
     }
 
+    async function handleBulkDeleteMonth() {
+        if (!filters.month) return;
+        if (transactions.length === 0) {
+            Alert.alert('Nenhuma transação', 'Não há transações neste mês para excluir.');
+            return;
+        }
+        setBulkDeleteVisible(true);
+    }
+
+    async function handleBulkDeleteConfirm() {
+        if (!filters.month || !user) return;
+        setBulkDeleting(true);
+        try {
+            const [mm, yy] = filters.month.split('/');
+            const from = `${yy}-${mm}-01`;
+            const to = `${yy}-${mm}-31`;
+            const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .eq('user_id', user.id)
+                .gte('date', from)
+                .lte('date', to);
+            if (error) throw new Error(error.message);
+            setBulkDeleteVisible(false);
+            refetch();
+        } catch (e) {
+            Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível excluir.');
+        } finally {
+            setBulkDeleting(false);
+        }
+    }
+
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
             {/* Header */}
@@ -110,30 +150,41 @@ export function TransactionsScreen() {
                 subtitle={filters.month ? monthLabelShort(filters.month) : undefined}
                 onLeftPress={openMenu}
                 rightElement={
-                    <TouchableOpacity
-                        onPress={() => setSheetVisible(true)}
-                        style={{
-                            padding: 8,
-                            borderRadius: 10,
-                            backgroundColor: activeCount > 0
-                                ? '#6366f1'
-                                : isDark ? '#1e2433' : '#eef2ff',
-                        }}
-                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Feather
-                                name="filter"
-                                size={16}
-                                color={activeCount > 0 ? '#ffffff' : '#6366f1'}
-                            />
-                            {activeCount > 0 && (
-                                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
-                                    {activeCount}
-                                </Text>
-                            )}
-                        </View>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {filters.month && (
+                            <TouchableOpacity
+                                onPress={handleBulkDeleteMonth}
+                                style={{ padding: 6 }}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                                <Feather name="trash-2" size={18} color="#ef4444" />
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            onPress={() => setSheetVisible(true)}
+                            style={{
+                                padding: 8,
+                                borderRadius: 10,
+                                backgroundColor: activeCount > 0
+                                    ? '#6366f1'
+                                    : isDark ? '#1e2433' : '#eef2ff',
+                            }}
+                            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Feather
+                                    name="filter"
+                                    size={16}
+                                    color={activeCount > 0 ? '#ffffff' : '#6366f1'}
+                                />
+                                {activeCount > 0 && (
+                                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>
+                                        {activeCount}
+                                    </Text>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 }
             />
 
@@ -216,6 +267,17 @@ export function TransactionsScreen() {
                 onClose={() => setCreateVisible(false)}
                 onCreateCategory={async (name) => createCategory({ name })}
             />
+            {/* Bulk Delete Month Sheet */}
+            {filters.month && (
+                <BulkDeleteSheet
+                    visible={bulkDeleteVisible}
+                    title={`Excluir transações de ${monthLabelShort(filters.month)}?`}
+                    description={`Isso excluirá ${transactions.length} transação${transactions.length !== 1 ? 'ões' : ''} de ${monthLabelShort(filters.month)}. Esta ação não pode ser desfeita.`}
+                    loading={bulkDeleting}
+                    onConfirm={handleBulkDeleteConfirm}
+                    onClose={() => !bulkDeleting && setBulkDeleteVisible(false)}
+                />
+            )}
         </SafeAreaView>
     );
 }

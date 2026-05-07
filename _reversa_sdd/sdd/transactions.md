@@ -177,6 +177,7 @@ entry.total        = entry.income - entry.expense
 | RN-04 | Prioridade do `billing_month` sobre `date` para agrupamento | `lib/transactions.ts:45-50` | 🟢 |
 | RN-05 | Suporte a dois formatos de data coexistentes (ISO e DD/MM/YYYY) | `lib/transactions.ts` | 🟢 |
 | RN-06 | Ordenação de meses por `localeCompare` em `MM/YYYY` | `lib/transactions.ts:72` | 🟢 |
+| RN-07 | A tela de Transações exibe **apenas** transações bancárias (`credit_card_id IS NULL`). Transações de cartão de crédito são gerenciadas exclusivamente na tela de Faturas (`CreditCardBillsScreen`), evitando duplicação de dados. | `TransactionsScreen.tsx` | 🟢 |
 
 ---
 
