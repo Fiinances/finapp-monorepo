@@ -64,8 +64,6 @@ export function CreditCardBillsScreen() {
     const [editTarget, setEditTarget] = useState<Transaction | null>(null);
     const [editSaving, setEditSaving] = useState(false);
     const [editDeleting, setEditDeleting] = useState(false);
-    const [bulkDeleteVisible, setBulkDeleteVisible] = useState(false);
-    const [bulkDeleting, setBulkDeleting] = useState(false);
 
     async function handleSaveEdit(id: number, patch: Parameters<typeof updateTransaction>[1]) {
         setEditSaving(true);
@@ -93,33 +91,7 @@ export function CreditCardBillsScreen() {
         }
     }
 
-    async function handleBulkDeleteBill() {
-        if (monthlyTransactions.length === 0) {
-            Alert.alert('Nenhuma transação', 'Não há transações nesta fatura para excluir.');
-            return;
-        }
-        setBulkDeleteVisible(true);
-    }
 
-    async function handleBulkDeleteConfirm() {
-        setBulkDeleting(true);
-        try {
-            const { error } = await supabase
-                .from('transactions')
-                .delete()
-                .eq('user_id', user!.id)
-                .not('credit_card_id', 'is', null)
-                .eq('billing_month', selectedMonth);
-
-            if (error) throw new Error(error.message);
-            setBulkDeleteVisible(false);
-            refetch();
-        } catch (e) {
-            Alert.alert('Erro', e instanceof Error ? e.message : 'Não foi possível excluir a fatura.');
-        } finally {
-            setBulkDeleting(false);
-        }
-    }
 
     // Build Gifted Charts stackData format
     const stackData = chartData.map((d) => {
@@ -148,23 +120,12 @@ export function CreditCardBillsScreen() {
     const isAtMax = chartData.length > 0 && selectedMonth >= chartData[chartData.length - 1].month;
     const currentMonthData = chartData.find(d => d.month === selectedMonth);
 
-    const headerRight = (
-        <TouchableOpacity
-            onPress={handleBulkDeleteBill}
-            style={{ padding: 6 }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-            <Feather name="trash-2" size={19} color="#ef4444" />
-        </TouchableOpacity>
-    );
-
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: bg }}>
             <AppHeader
                 title="Faturas"
                 subtitle="Cartões de Crédito"
                 onLeftPress={openMenu}
-                rightElement={headerRight}
             />
 
             {loading && chartData.length === 0 ? (
@@ -305,15 +266,6 @@ export function CreditCardBillsScreen() {
                 onClose={() => setEditTarget(null)}
             />
 
-            {/* Bulk Delete Sheet */}
-            <BulkDeleteSheet
-                visible={bulkDeleteVisible}
-                title={`Excluir fatura de ${monthLabel(selectedMonth)}?`}
-                description={`Isso excluirá ${monthlyTransactions.length} transação${monthlyTransactions.length !== 1 ? 'ões' : ''} de cartão de crédito desta fatura. Esta ação não pode ser desfeita.`}
-                loading={bulkDeleting}
-                onConfirm={handleBulkDeleteConfirm}
-                onClose={() => !bulkDeleting && setBulkDeleteVisible(false)}
-            />
         </SafeAreaView>
     );
 }

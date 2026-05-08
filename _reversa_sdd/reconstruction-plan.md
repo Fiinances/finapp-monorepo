@@ -410,7 +410,7 @@
 **Pronto quando:** Usuário aciona detecção em qualquer uma das telas, vê os candidatos, consegue criar um parcelamento e uma assinatura a partir da análise, e o resultado é corretamente persistido no banco.
 
 #### Tarefa 18-S — Migração de Schema: `import_records` + `transactions.import_id`
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/import-history.md`
 **Constrói:** Migração Supabase com 2 alterações no banco de dados.
 **Detalhes:**
@@ -421,7 +421,7 @@
 **Pronto quando:** Migration aplicada com sucesso no Supabase; `transactions.import_id` existe; tabela `import_records` criada com índice único.
 
 #### Tarefa 18-T — Lógica de UPSERT de Importação + Tela `ImportHistoryScreen`
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/import-history.md`, `_reversa_sdd/sdd/import.md`
 **Constrói:** (A) Atualização do fluxo `confirmImport` em `ImportScreen.tsx`; (B) Hook `useImportHistory`; (C) Tela `ImportHistoryScreen.tsx`; (D) Registro no SideMenu e AppNavigator. (E) Remoção dos botões de exclusão por mês de `CreditCardBillsScreen` e `TransactionsScreen`.
 **Detalhes:**

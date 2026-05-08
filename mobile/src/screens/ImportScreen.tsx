@@ -87,6 +87,27 @@ function currentMonthYear(): string {
     return `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 }
 
+function deriveMonth(transactions: PreviewTransaction[]): string {
+    const counts: Record<string, number> = {};
+    for (const t of transactions) {
+        if (!t.date) continue;
+        const parts = t.date.split('-');
+        if (parts.length >= 2) {
+            const key = `${parts[1]}/${parts[0]}`;
+            counts[key] = (counts[key] || 0) + 1;
+        }
+    }
+    let max = 0;
+    let best = currentMonthYear();
+    for (const [key, count] of Object.entries(counts)) {
+        if (count > max) {
+            max = count;
+            best = key;
+        }
+    }
+    return best;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ImportScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -292,6 +313,8 @@ export function ImportScreen() {
 
             const cardId = isCard ? parseInt(accountId.slice(2), 10) : null;
             const acctId = !isCard ? parseInt(accountId.slice(2), 10) : null;
+            const destId = isCard ? cardId : acctId;
+            const destType = isCard ? 'credit_card' : 'bank_account';
 
             // Deduplicate by external_id (keep last occurrence)
             const deduplicatedMap = new Map<string, PreviewTransaction>();
@@ -303,12 +326,41 @@ export function ImportScreen() {
                 }
             }
             const uniqueRows = Array.from(deduplicatedMap.values());
+            const totalProcessed = uniqueRows.length;
 
             let newCount = 0;
             let updateCount = 0;
             let sourceChangeCount = 0;
 
-            const upsertRows = uniqueRows.map(r => {
+            // Step 1: UPSERT em import_records
+            const { data: record, error: recordError } = await supabase
+                .from('import_records')
+                .upsert({
+                    user_id: user.id,
+                    destination_type: destType,
+                    destination_id: destId,
+                    month: deriveMonth(uniqueRows),
+                    billing_month: isCard ? billingMonth : null,
+                    file_name: fileName,
+                    file_format: kind,
+                    transaction_count: totalProcessed,
+                    updated_at: new Date().toISOString(),
+                }, {
+                    onConflict: 'user_id,destination_type,destination_id,month',
+                })
+                .select('id')
+                .single();
+
+            if (recordError) throw new Error(`Erro ao registrar importação: ${recordError.message}`);
+
+            // Step 2: Deletar transações antigas deste import_id
+            await supabase
+                .from('transactions')
+                .delete()
+                .eq('import_id', record.id);
+
+            // Step 3: Inserir novas transações com import_id
+            const insertRows = uniqueRows.map(r => {
                 const existing = r.external_id ? existingTxMap.get(r.external_id) : undefined;
                 
                 if (existing) {
@@ -339,16 +391,16 @@ export function ImportScreen() {
                     account_id: acctId,
                     credit_card_id: cardId,
                     billing_month: isCard ? billingMonth : null,
+                    import_id: record.id,
                 };
             });
 
             const { error: insertError } = await supabase
                 .from('transactions')
-                .upsert(upsertRows, { onConflict: 'user_id,external_id', ignoreDuplicates: false });
+                .upsert(insertRows, { onConflict: 'user_id,external_id', ignoreDuplicates: false });
 
-            if (insertError) throw new Error(insertError.message);
+            if (insertError) throw new Error(`Erro ao salvar transações: ${insertError.message}`);
 
-            const totalProcessed = uniqueRows.length;
 
             const lines = [
                 `📥 Processadas: ${totalProcessed}`,

@@ -14,5 +14,6 @@ export type AppTabParamList = {
     Subscriptions: undefined;
     CreditCardBills: undefined;
     Import: undefined;
+    ImportHistory: undefined;
     Categories: undefined;
 };

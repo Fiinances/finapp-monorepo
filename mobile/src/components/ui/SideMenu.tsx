@@ -255,6 +255,14 @@ export function SideMenu({ visible, onClose, currentRoute }: SideMenuProps) {
                         active={currentRoute === 'Import'}
                     />
                     <MenuItem
+                        icon="clock"
+                        label="Histórico de Importações"
+                        onPress={() => { onClose(); setTimeout(() => navigation.navigate('ImportHistory'), 250); }}
+                        textPrimary={textPrimary}
+                        bgActive={bgItemActive}
+                        active={currentRoute === 'ImportHistory'}
+                    />
+                    <MenuItem
                         icon="tag"
                         label="Categorias"
                         onPress={() => { onClose(); setTimeout(() => navigation.navigate('Categories'), 250); }}

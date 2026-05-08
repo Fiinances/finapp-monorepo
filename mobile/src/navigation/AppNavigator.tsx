@@ -11,6 +11,7 @@ import { InstallmentsScreen } from '@/screens/InstallmentsScreen';
 import { SubscriptionsScreen } from '@/screens/SubscriptionsScreen';
 import { TransactionsScreen } from '@/screens/TransactionsScreen';
 import { ImportScreen } from '@/screens/ImportScreen';
+import { ImportHistoryScreen } from '@/screens/ImportHistoryScreen';
 import { CategoriesScreen } from '@/screens/CategoriesScreen';
 import { CreditCardBillsScreen } from '@/screens/CreditCardBillsScreen';
 import { AppTabParamList } from './types';
@@ -40,6 +41,7 @@ function AppNavigatorInner() {
                 <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
                 <Stack.Screen name="CreditCardBills" component={CreditCardBillsScreen} />
                 <Stack.Screen name="Import" component={ImportScreen} />
+                <Stack.Screen name="ImportHistory" component={ImportHistoryScreen} />
                 <Stack.Screen name="Categories" component={CategoriesScreen} />
             </Stack.Navigator>
             <SideMenu visible={isMenuOpen} onClose={closeMenu} currentRoute={currentRoute} />
