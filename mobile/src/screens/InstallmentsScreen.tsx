@@ -21,6 +21,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useInstallments } from '@/hooks/useInstallments';
 import type { InstallmentGroup } from '@/types';
 import { AppHeader } from '@/components/ui';
+import { SmartDetectSheet } from '@/components/smart-detect/SmartDetectSheet';
+import { SmartCandidate } from '@/hooks/useSmartDetect';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,6 +146,7 @@ export function InstallmentsScreen() {
     const [editing, setEditing] = useState<InstallmentGroup | null>(null);
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
+    const [detectSheetOpen, setDetectSheetOpen] = useState(false);
     const [dialog, setDialog] = useState<DialogConfig>({ visible: false, type: 'info', title: '', message: '' });
 
     const { translateY, panHandlers, resetTranslate } = useSwipeToDismiss(() => closeSheet());
@@ -161,7 +164,7 @@ export function InstallmentsScreen() {
     const closeDialog = () => setDialog((d) => ({ ...d, visible: false }));
 
     // ── Sheet open/close ───────────────────────────────────────────────
-    const openSheet = (group?: InstallmentGroup) => {
+    const openSheet = (group?: InstallmentGroup | null, prefill?: SmartCandidate) => {
         if (group) {
             setEditing(group);
             setForm({
@@ -171,6 +174,16 @@ export function InstallmentsScreen() {
                 installments: String(group.installments),
                 first_billing_month: group.first_billing_month,
                 category: group.category ?? '',
+            });
+        } else if (prefill) {
+            setEditing(null);
+            setForm({
+                credit_card_id: '',
+                description: prefill.displayName,
+                total_amount: (prefill.amount * prefill.count).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                installments: String(prefill.count),
+                first_billing_month: prefill.firstMonth,
+                category: '',
             });
         } else {
             setEditing(null);
@@ -391,17 +404,31 @@ export function InstallmentsScreen() {
                     title="Parcelamentos"
                     onLeftPress={openMenu}
                     rightElement={
-                        <TouchableOpacity
-                            onPress={() => openSheet()}
-                            activeOpacity={0.8}
-                            style={{
-                                width: 38, height: 38, borderRadius: 19,
-                                backgroundColor: '#6366f1',
-                                alignItems: 'center', justifyContent: 'center',
-                            }}
-                        >
-                            <Feather name="plus" size={20} color="#fff" />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity
+                                onPress={() => setDetectSheetOpen(true)}
+                                activeOpacity={0.8}
+                                style={{
+                                    height: 38, paddingHorizontal: 12, borderRadius: 19,
+                                    backgroundColor: isDark ? '#1e2540' : '#e0e7ff',
+                                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                                }}
+                            >
+                                <Feather name="search" size={16} color="#6366f1" />
+                                <Text style={{ color: '#6366f1', fontSize: 13, fontWeight: '600' }}>Detectar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => openSheet()}
+                                activeOpacity={0.8}
+                                style={{
+                                    width: 38, height: 38, borderRadius: 19,
+                                    backgroundColor: '#6366f1',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >
+                                <Feather name="plus" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                     }
                 />
 
@@ -658,6 +685,12 @@ export function InstallmentsScreen() {
                 textColor={textColor}
                 bgCard={bgCard}
                 labelColor={labelColor}
+            />
+
+            <SmartDetectSheet
+                visible={detectSheetOpen}
+                onClose={() => setDetectSheetOpen(false)}
+                onPrefillInstallment={(c) => openSheet(null, c)}
             />
         </View>
     );

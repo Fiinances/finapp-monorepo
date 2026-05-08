@@ -375,15 +375,62 @@
 **Pronto quando:** Bottom sheet aparece, exibe os textos corretamente, botão confirmar dispara onConfirm com feedback de loading e botão cancelar fecha sem ação.
 
 #### Tarefa 18-P — Exclusão em Lote nas Telas
+**Status:** ⚠️ superseded
+**Nota:** Estratégia de exclusão por mês foi substituída pela Tarefa 18-T (exclusão por importação via `ImportHistoryScreen`). O componente `BulkDeleteSheet` (18-O) permanece e é reutilizado. Os botões de lixeira por mês em `CreditCardBillsScreen` e `TransactionsScreen` devem ser **removidos** na execução de 18-T.
+**Lê:** `_reversa_sdd/sdd/import-history.md`
+**Pronto quando:** Botões de exclusão por mês são removidos das telas; exclusão só ocorre via ImportHistoryScreen.
+
+#### Tarefa 18-Q — Hook `useSmartDetect`
 **Status:** ✅ done
-**Lê:** `_reversa_sdd/sdd/bulk-delete.md`
-**Constrói:** Integração do `BulkDeleteSheet` na `CreditCardBillsScreen` e na `TransactionsScreen` com menu `⋮` contextual.
+**Lê:** `_reversa_sdd/sdd/smart-detect.md`
+**Constrói:** `hooks/useSmartDetect.ts` — algoritmo de detecção de padrões de parcelamento e assinatura em transações bancárias existentes.
 **Detalhes:**
-- `CreditCardBillsScreen`: botão `⋮` no header → "Excluir fatura de [Mês]" → confirma → deleta transações de cartão do mês via Supabase → refetch.
-- `TransactionsScreen`: botão `⋮` aparece somente quando `filters.month` está ativo → "Excluir transações de [Mês]" → confirma → deleta transações do período → refetch.
-- Contagem de itens exibida no `BulkDeleteSheet` antes de confirmar.
-- Caso não haja itens, Alert informativo sem executar a query.
-**Pronto quando:** (A) Usuário exclui fatura inteira do cartão com atualização do gráfico; (B) Usuário com filtro de mês ativo exclui transações bancárias do mês; (C) sem filtro de mês, opção não aparece na TransactionsScreen.
+- Busca transações bancárias dos últimos 12 meses via Supabase (`credit_card_id IS NULL`).
+- Normaliza descrições (remove numeração de parcelas, pontuação, espaços extras).
+- Agrupa por descrição normalizada → filtra grupos com ≥ 2 ocorrências.
+- Calcula variação de valor e intervalo entre datas para classificar como `installment` ou `subscription`.
+- Confiança: `high` (variação < 2%), `medium` (< 5%), `low` (≥ 5%).
+- Filtra candidatos cujas descrições já existem em `installment_groups` ou `subscriptions`.
+- Retorna: `{ loading, error, candidates, analyze, dismiss }`.
+**Pronto quando:** `analyze()` retorna lista de `SmartCandidate[]` com classificação correta para transações recorrentes no banco.
+
+#### Tarefa 18-R — Tela `SmartDetectSheet`
+**Status:** ✅ done
+**Lê:** `_reversa_sdd/sdd/smart-detect.md`, `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
+**Constrói:** `components/smart-detect/SmartDetectSheet.tsx` — bottom sheet de revisão de candidatos detectados, integrado nas telas de Parcelamentos e Assinaturas.
+**Detalhes:**
+- Bottom sheet com lista de candidatos, tabs "Parcelamentos / Assinaturas" para filtrar.
+- Card por candidato: nome, valor, período detectado, confiança visual, 3 botões de ação.
+- Botão "Criar como Parcelamento" → abre `InstallmentCreateSheet` pré-preenchido.
+- Botão "Criar como Assinatura" → abre `SubscriptionSheet` pré-preenchido.
+- Botão "Ignorar" → remove candidato da lista local (sem gravação no banco).
+- Após criação bem-sucedida: candidato exibe badge "✅ Criado".
+- Estado vazio: mensagem orientando o usuário a importar mais transações.
+- Adicionar botão `[Detectar]` no header de `InstallmentsScreen` e `SubscriptionsScreen`.
+**Pronto quando:** Usuário aciona detecção em qualquer uma das telas, vê os candidatos, consegue criar um parcelamento e uma assinatura a partir da análise, e o resultado é corretamente persistido no banco.
+
+#### Tarefa 18-S — Migração de Schema: `import_records` + `transactions.import_id`
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/import-history.md`
+**Constrói:** Migração Supabase com 2 alterações no banco de dados.
+**Detalhes:**
+- Criar tabela `import_records` com campos: `id`, `user_id`, `destination_type`, `destination_id`, `month`, `billing_month`, `file_name`, `file_format`, `transaction_count`, `imported_at`, `updated_at`.
+- Índice único: `(user_id, destination_type, destination_id, month)` para garantir deduplicação de reimportações.
+- Adicionar coluna `import_id BIGINT REFERENCES import_records(id) ON DELETE CASCADE` na tabela `transactions`.
+- Aplicar RLS em `import_records`: SELECT/INSERT/UPDATE/DELETE apenas para `auth.uid() = user_id`.
+**Pronto quando:** Migration aplicada com sucesso no Supabase; `transactions.import_id` existe; tabela `import_records` criada com índice único.
+
+#### Tarefa 18-T — Lógica de UPSERT de Importação + Tela `ImportHistoryScreen`
+**Status:** pending
+**Lê:** `_reversa_sdd/sdd/import-history.md`, `_reversa_sdd/sdd/import.md`
+**Constrói:** (A) Atualização do fluxo `confirmImport` em `ImportScreen.tsx`; (B) Hook `useImportHistory`; (C) Tela `ImportHistoryScreen.tsx`; (D) Registro no SideMenu e AppNavigator. (E) Remoção dos botões de exclusão por mês de `CreditCardBillsScreen` e `TransactionsScreen`.
+**Detalhes:**
+- **UPSERT de importação:** `confirmImport` faz UPSERT em `import_records` → recebe o `id` → deleta transações antigas com esse `import_id` → insere novas transações com `import_id` preenchido.
+- **`useImportHistory`:** busca `import_records` do usuário via Supabase, ordena por `imported_at DESC`; join client-side com `useBanks()` para nome/cor do destino; expõe `deleteRecord(id)` que deleta o registro (CASCADE cuida das transações).
+- **`ImportHistoryScreen`:** lista de cards de importação com filtro de mês (setas ← →) e filtro de tipo (pills Todos/Cartão/Conta); cada card exibe nome/cor do destino, mês, billing_month (se cartão), nº transações, formato e data; botão 🗑️ → `BulkDeleteSheet` → `deleteRecord`; estado vazio com orientação.
+- **SideMenu/Navigator:** adicionar "Importações" no menu lateral e registrar rota.
+- **Remoção:** remover botões `⋮` de exclusão por mês de `CreditCardBillsScreen` e `TransactionsScreen`; remover imports não utilizados.
+**Pronto quando:** (A) Reimportar o mesmo mês/destino atualiza o registro e as transações sem duplicar; (B) `ImportHistoryScreen` lista todas as importações com filtros funcionais; (C) Exclusão via 🗑️ remove o registro e as transações vinculadas; (D) Transações manuais (import_id IS NULL) não são afetadas.
 
 ---
 

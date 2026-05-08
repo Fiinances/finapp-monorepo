@@ -25,6 +25,8 @@ import {
 } from '@/hooks/useSubscriptions';
 import type { Subscription, SubscriptionPeriod } from '@/types';
 import { AppHeader } from '@/components/ui';
+import { SmartDetectSheet } from '@/components/smart-detect/SmartDetectSheet';
+import { SmartCandidate } from '@/hooks/useSmartDetect';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,6 +160,7 @@ export function SubscriptionsScreen() {
     const [editing, setEditing] = useState<Subscription | null>(null);
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
+    const [detectSheetOpen, setDetectSheetOpen] = useState(false);
     const [dialog, setDialog] = useState<DialogConfig>({ visible: false, type: 'info', title: '', message: '' });
 
     const { translateY, panHandlers, resetTranslate } = useSwipeToDismiss(() => closeSheet());
@@ -178,7 +181,7 @@ export function SubscriptionsScreen() {
     const closeDialog = () => setDialog((d) => ({ ...d, visible: false }));
 
     // ── Sheet open/close ───────────────────────────────────────────────
-    const openSheet = (sub?: Subscription) => {
+    const openSheet = (sub?: Subscription | null, prefill?: SmartCandidate) => {
         if (sub) {
             setEditing(sub);
             setForm({
@@ -192,6 +195,20 @@ export function SubscriptionsScreen() {
                 bank_account_id: sub.bank_account_id ? String(sub.bank_account_id) : '',
                 credit_card_id: sub.credit_card_id ? String(sub.credit_card_id) : '',
                 active: sub.active,
+            });
+        } else if (prefill) {
+            setEditing(null);
+            setForm({
+                name: prefill.displayName,
+                amount: prefill.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                type: 'expense',
+                period: prefill.interval,
+                next_due: '',
+                category: '',
+                color: '',
+                bank_account_id: '',
+                credit_card_id: '',
+                active: 1,
             });
         } else {
             setEditing(null);
@@ -417,17 +434,31 @@ export function SubscriptionsScreen() {
                     title="Assinaturas"
                     onLeftPress={openMenu}
                     rightElement={
-                        <TouchableOpacity
-                            onPress={() => openSheet()}
-                            activeOpacity={0.8}
-                            style={{
-                                width: 38, height: 38, borderRadius: 19,
-                                backgroundColor: '#6366f1',
-                                alignItems: 'center', justifyContent: 'center',
-                            }}
-                        >
-                            <Feather name="plus" size={20} color="#fff" />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity
+                                onPress={() => setDetectSheetOpen(true)}
+                                activeOpacity={0.8}
+                                style={{
+                                    height: 38, paddingHorizontal: 12, borderRadius: 19,
+                                    backgroundColor: isDark ? '#1e2540' : '#e0e7ff',
+                                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                                }}
+                            >
+                                <Feather name="search" size={16} color="#6366f1" />
+                                <Text style={{ color: '#6366f1', fontSize: 13, fontWeight: '600' }}>Detectar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => openSheet()}
+                                activeOpacity={0.8}
+                                style={{
+                                    width: 38, height: 38, borderRadius: 19,
+                                    backgroundColor: '#6366f1',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >
+                                <Feather name="plus" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
                     }
                 />
 
@@ -752,6 +783,12 @@ export function SubscriptionsScreen() {
                 textColor={textColor}
                 bgCard={bgCard}
                 labelColor={labelColor}
+            />
+
+            <SmartDetectSheet
+                visible={detectSheetOpen}
+                onClose={() => setDetectSheetOpen(false)}
+                onPrefillSubscription={(c) => openSheet(null, c)}
             />
         </View>
     );
