@@ -99,7 +99,7 @@ export function useCreditCardBills(): CreditCardBillsData {
     // Build chart data
     const chartData: BillChartData[] = keys.map((month) => {
         const txsInMonth = transactions.filter((t) => txBillingMonth(t) === month);
-        
+
         let total = 0;
         const breakdownMap = new Map<number, CardBreakdown>();
 
@@ -118,9 +118,9 @@ export function useCreditCardBills(): CreditCardBillsData {
         // RN-01: "O gráfico e a listagem devem considerar o valor líquido... somando saídas e abatendo estornos"
         txsInMonth.forEach((t) => {
             if (t.credit_card_id === null) return;
-            const bd = breakdownMap.get(t.credit_card_id);
+            const bd = breakdownMap.get(t.credit_card_id as number);
             if (!bd) return;
-            
+
             // Expense adds to the total bill, income/refund subtracts from the bill
             const sign = t.type === 'income' ? -1 : 1;
             bd.amount += t.amount * sign;

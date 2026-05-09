@@ -344,7 +344,7 @@ O item aceita `onPress` que abre o `TransactionEditSheet`.
 │                                  │
 │  [R$ 1.234,56]     [31/12/2024]  │  ← Valor + Data (TextInput)
 │                                  │
-│  [Sem cat.] [Alimentação] [...]  │  ← Category chips (scroll horizontal)
+│  [Sem cat.] [Alimentação] [...]  │  ← Category autocomplete
 ├──────────────────────────────────┤
 │  [  Cancelar  ]  [  Salvar  ]    │  ← Footer fixo
 └──────────────────────────────────┘
@@ -358,7 +358,7 @@ O item aceita `onPress` que abre o `TransactionEditSheet`.
 | Descrição | `TextInput` (linha única, autoFocus) | Não pode estar vazia |
 | Valor | `TextInput` numérico (formato BR `1.234,56`) | Deve parsear para número > 0 |
 | Data | `TextInput` com máscara `DD/MM/YYYY` | Deve ser data válida |
-| Categoria | Chips horizontais + "Sem categoria" (null) | Opcional |
+| Categoria | Autocomplete com busca inline + "Sem categoria" (null) | Opcional |
 
 **Type Pills — cores e labels:**
 

@@ -111,6 +111,10 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
     const [categoryId, setCategoryId] = useState<number | null>(null);
     const [errors, setErrors] = useState<Partial<Record<'description' | 'amount' | 'date', string>>>({});
 
+    // Category autocomplete
+    const [catQuery, setCatQuery] = useState('');
+    const [catOpen, setCatOpen] = useState(false);
+
     const slideAnim = useRef(new Animated.Value(SHEET_H)).current;
 
     // Keep a stable ref to the close handler so the PanResponder closure is never stale
@@ -226,6 +230,11 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
     }
 
     const typeColor = TYPE_COLORS[type]?.light ?? accent;
+
+    const selectedCat = categories.find(c => c.id === categoryId) ?? null;
+    const catFiltered = catQuery.trim()
+        ? categories.filter(c => c.name.toLowerCase().includes(catQuery.trim().toLowerCase()))
+        : categories;
 
     return (
         <Modal
@@ -429,70 +438,111 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
 
                         {/* ── Categoria ── */}
                         <Text style={[styles.sectionLabel(labelColor), { marginTop: 20 }]}>Categoria</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-                        >
-                            {/* Sem categoria */}
-                            <TouchableOpacity
-                                onPress={() => setCategoryId(null)}
-                                style={{
+                        <View style={{ marginBottom: 24 }}>
+                            {selectedCat ? (
+                                <TouchableOpacity
+                                    onPress={() => { setCategoryId(null); setCatQuery(''); setCatOpen(true); }}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        backgroundColor: bgInput,
+                                        borderRadius: 12,
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 12,
+                                        borderWidth: 1.5,
+                                        borderColor: selectedCat.color ?? accent,
+                                    }}
+                                >
+                                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: selectedCat.color ?? accent }} />
+                                    <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: selectedCat.color ?? accent }}>
+                                        {selectedCat.name}
+                                    </Text>
+                                    <Feather name="x" size={16} color={labelColor} />
+                                </TouchableOpacity>
+                            ) : (
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: bgInput,
+                                    borderRadius: 12,
                                     paddingHorizontal: 14,
-                                    paddingVertical: 8,
-                                    borderRadius: 20,
-                                    backgroundColor: categoryId === null
-                                        ? `${accent}20`
-                                        : bgInput,
                                     borderWidth: 1.5,
-                                    borderColor: categoryId === null ? accent : 'transparent',
-                                }}
-                            >
-                                <Text style={{
-                                    fontSize: 13,
-                                    fontWeight: categoryId === null ? '700' : '500',
-                                    color: categoryId === null ? accent : labelColor,
+                                    borderColor: catOpen ? accent : 'transparent',
                                 }}>
-                                    Sem categoria
-                                </Text>
-                            </TouchableOpacity>
-
-                            {categories.map((cat) => {
-                                const active = categoryId === cat.id;
-                                const chipColor = cat.color ?? accent;
-                                return (
-                                    <TouchableOpacity
-                                        key={cat.id}
-                                        onPress={() => setCategoryId(cat.id)}
-                                        style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            gap: 5,
-                                            paddingHorizontal: 12,
-                                            paddingVertical: 8,
-                                            borderRadius: 20,
-                                            backgroundColor: active ? `${chipColor}22` : bgInput,
-                                            borderWidth: 1.5,
-                                            borderColor: active ? chipColor : 'transparent',
-                                        }}
-                                    >
-                                        <View style={{
-                                            width: 8,
-                                            height: 8,
-                                            borderRadius: 4,
-                                            backgroundColor: chipColor,
-                                        }} />
-                                        <Text style={{
-                                            fontSize: 13,
-                                            fontWeight: active ? '700' : '500',
-                                            color: active ? chipColor : labelColor,
-                                        }}>
-                                            {cat.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
+                                    <Feather name="search" size={15} color={labelColor} />
+                                    <TextInput
+                                        value={catQuery}
+                                        onChangeText={(v) => { setCatQuery(v); setCatOpen(true); }}
+                                        onFocus={() => setCatOpen(true)}
+                                        onBlur={() => setTimeout(() => setCatOpen(false), 150)}
+                                        placeholder="Buscar categoria..."
+                                        placeholderTextColor={labelColor}
+                                        style={{ flex: 1, color: textColor, fontSize: 15, paddingVertical: 12, marginLeft: 8 }}
+                                    />
+                                    {catQuery.length > 0 && (
+                                        <TouchableOpacity
+                                            onPress={() => { setCatQuery(''); setCatOpen(true); }}
+                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                            <Feather name="x" size={16} color={labelColor} />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
+                            {catOpen && !selectedCat && (
+                                <View style={{
+                                    backgroundColor: isDark ? '#1e2433' : '#f9fafb',
+                                    borderRadius: 12,
+                                    marginTop: 6,
+                                    overflow: 'hidden',
+                                    borderWidth: 1,
+                                    borderColor: borderColor,
+                                }}>
+                                    {catQuery.length === 0 && (
+                                        <TouchableOpacity
+                                            onPress={() => { setCategoryId(null); setCatOpen(false); }}
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                paddingHorizontal: 14,
+                                                paddingVertical: 12,
+                                                borderBottomWidth: categories.length > 0 ? 1 : 0,
+                                                borderBottomColor: borderColor,
+                                            }}
+                                        >
+                                            <Feather name="slash" size={14} color={labelColor} />
+                                            <Text style={{ fontSize: 14, color: labelColor }}>Sem categoria</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {catFiltered.map((cat, idx) => (
+                                        <TouchableOpacity
+                                            key={cat.id}
+                                            onPress={() => { setCategoryId(cat.id); setCatOpen(false); setCatQuery(''); }}
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                paddingHorizontal: 14,
+                                                paddingVertical: 12,
+                                                borderBottomWidth: idx < catFiltered.length - 1 ? 1 : 0,
+                                                borderBottomColor: borderColor,
+                                            }}
+                                        >
+                                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: cat.color ?? accent }} />
+                                            <Text style={{ flex: 1, fontSize: 14, color: textColor }}>{cat.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                    {catFiltered.length === 0 && catQuery.length > 0 && (
+                                        <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
+                                            <Text style={{ fontSize: 14, color: labelColor }}>Nenhuma categoria encontrada</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
                     </ScrollView>
 
                     {/* ── Footer ── */}

@@ -110,7 +110,7 @@ export function useDashboard(): DashboardData {
             const { data: txData, error: txErr } = await supabase
                 .from('transactions')
                 .select('*, category:transaction_categories(*)')
-                .is('credit_card_id', null) // RN-09: Ignorar cartões no Dashboard
+                // RN-09: Incluir cartões no Dashboard, mas usar billing_month para agrupamento
                 .gte('date', from)
                 .order('date', { ascending: true });
 
@@ -137,13 +137,13 @@ export function useDashboard(): DashboardData {
         fetchAll();
     }, [fetchAll]);
 
-    // --- Monthly bar data (RN-01: exclude transfer/card_payment; RN-02: investment not in net; RN-09: no credit cards) ---
+    // --- Monthly bar data (RN-01: exclude transfer/card_payment; RN-02: investment not in net; RN-09: group cards by billing_month) ---
     const monthlyData: MonthlyBarData[] = keys.map((monthYear) => {
         const filtered = transactions.filter(
             (t) =>
                 t.type !== 'transfer' &&
                 t.type !== 'card_payment' &&
-                parseYearMonth(t.date) === monthYear,
+                parseYearMonth(t.credit_card_id && t.billing_month ? t.billing_month : t.date) === monthYear,
         );
         const income = filtered.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
         const expense = filtered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -151,10 +151,10 @@ export function useDashboard(): DashboardData {
         return { monthYear, income, expense, investment, net: income - expense };
     });
 
-    // --- Category slices (RN-03: use date NOT billing_month; RN-04: "Sem categoria") ---
+    // --- Category slices (RN-09: group cards by billing_month; RN-04: "Sem categoria") ---
     const categorySlices: CategorySlice[] = (() => {
         const expensesInMonth = transactions.filter(
-            (t) => t.type === 'expense' && parseYearMonth(t.date) === selectedMonth,
+            (t) => t.type === 'expense' && parseYearMonth(t.credit_card_id && t.billing_month ? t.billing_month : t.date) === selectedMonth,
         );
         const grouped = new Map<number | null, { name: string; color: string; value: number }>();
         for (const t of expensesInMonth) {

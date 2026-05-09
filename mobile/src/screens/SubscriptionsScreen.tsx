@@ -463,7 +463,7 @@ export function SubscriptionsScreen() {
                 />
 
                 {/* Metric cards */}
-                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginVertical: 16 }}>
                     <MetricCard
                         label="Ativas" value={String(active.length)}
                         color="#6366f1" icon="refresh-cw"

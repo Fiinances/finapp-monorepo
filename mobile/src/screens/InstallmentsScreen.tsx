@@ -433,7 +433,7 @@ export function InstallmentsScreen() {
                 />
 
                 {/* Metric cards */}
-                <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 16 }}>
                     <MetricCard
                         label="Total em aberto" value={formatBRL(totalOpen)}
                         color="#ef4444" bgCard={bgCard} textColor={textColor} labelColor={labelColor}

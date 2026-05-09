@@ -223,31 +223,39 @@ export function ImportScreen() {
                 if (previewUser) {
                     const { data: existing } = await supabase
                         .from('transactions')
-                        .select('external_id, category_id, account_id, credit_card_id')
+                        .select('external_id, date, category_id, account_id, credit_card_id')
                         .eq('user_id', previewUser.id)
                         .in('external_id', externalIds);
                     if (existing) {
                         newExistingTxMap = new Map(
-                            existing.map(t => [
-                                t.external_id as string,
-                                { 
-                                    category_id: t.category_id as number | null,
-                                    account_id: t.account_id as number | null,
-                                    credit_card_id: t.credit_card_id as number | null,
-                                },
-                            ])
+                            existing.map(t => {
+                                const destPart = t.credit_card_id ? `c:${t.credit_card_id}` : `a:${t.account_id}`;
+                                const hashKey = `${t.external_id}|${t.date}|${destPart}`;
+                                return [
+                                    hashKey,
+                                    { 
+                                        category_id: t.category_id as number | null,
+                                        account_id: t.account_id as number | null,
+                                        credit_card_id: t.credit_card_id as number | null,
+                                    },
+                                ];
+                            })
                         );
                     }
                 }
             }
             setExistingTxMap(newExistingTxMap);
 
-            const markedRows = rows.map(r => ({
-                ...r,
-                importStatus: (r.external_id && newExistingTxMap.has(r.external_id))
-                    ? 'update' as const
-                    : 'new' as const,
-            }));
+            const markedRows = rows.map(r => {
+                const destPart = accountId; // accountId current value
+                const hashKey = `${r.external_id}|${r.date}|${destPart}`;
+                return {
+                    ...r,
+                    importStatus: (r.external_id && newExistingTxMap.has(hashKey))
+                        ? 'update' as const
+                        : 'new' as const,
+                };
+            });
 
             setPreviewRows(markedRows);
             setStep('preview');
@@ -316,11 +324,13 @@ export function ImportScreen() {
             const destId = isCard ? cardId : acctId;
             const destType = isCard ? 'credit_card' : 'bank_account';
 
-            // Deduplicate by external_id (keep last occurrence)
+            // Deduplicate by external_id + date + destination
             const deduplicatedMap = new Map<string, PreviewTransaction>();
             for (const row of previewRows) {
                 if (row.external_id) {
-                    deduplicatedMap.set(row.external_id, row);
+                    const destPart = isCard ? `c:${cardId}` : `a:${acctId}`;
+                    const hashKey = `${row.external_id}|${row.date}|${destPart}`;
+                    deduplicatedMap.set(hashKey, row);
                 } else {
                     deduplicatedMap.set(row._key, row);
                 }
@@ -361,7 +371,9 @@ export function ImportScreen() {
 
             // Step 3: Inserir novas transações com import_id
             const insertRows = uniqueRows.map(r => {
-                const existing = r.external_id ? existingTxMap.get(r.external_id) : undefined;
+                const destPart = isCard ? `c:${cardId}` : `a:${acctId}`;
+                const hashKey = `${r.external_id}|${r.date}|${destPart}`;
+                const existing = r.external_id ? existingTxMap.get(hashKey) : undefined;
                 
                 if (existing) {
                     updateCount++;
@@ -397,7 +409,7 @@ export function ImportScreen() {
 
             const { error: insertError } = await supabase
                 .from('transactions')
-                .upsert(insertRows, { onConflict: 'user_id,external_id', ignoreDuplicates: false });
+                .upsert(insertRows, { onConflict: 'user_id,external_id,date,account_id,credit_card_id', ignoreDuplicates: false });
 
             if (insertError) throw new Error(`Erro ao salvar transações: ${insertError.message}`);
 

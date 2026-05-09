@@ -201,7 +201,7 @@ billingMonth: string     // MM/YYYY
 
 | ID | Regra | Localização | Confiança |
 |---|---|---|---|
-| RN-01 | Upsert por `external_id`: todos os campos são sobrescritos no conflito — `account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`; `category_id` é preservado se já definido | `confirmImport():412` | 🟢 |
+| RN-01 | Upsert por chave composta: a unicidade é garantida pela combinação de `external_id`, `date`, `account_id` e `credit_card_id`. Todos os demais campos são sobrescritos no conflito; `category_id` é preservado se já definido. | `confirmImport():412` | 🟢 |
 | RN-01a | Uma transação pode mudar de source: cartão → conta (credit_card_id vira null, account_id é preenchido) ou conta → cartão (account_id vira null, credit_card_id e billing_month são preenchidos) | upsert Supabase | 🟢 |
 | RN-02 | `billing_month` só é obrigatório quando o destino é cartão (`c:`) | `confirmImport():400-403` | 🟢 |
 | RN-03 | `billing_month` é inferido automaticamente pelo `closing_day` do cartão | `useEffect:281-288` | 🟢 |
@@ -212,7 +212,7 @@ billingMonth: string     // MM/YYYY
 | RN-08 | `amount` sempre positivo — sinal determinado pelo `type` | `Math.abs(rawAmount)` | 🟢 |
 | RN-09 | `source` é fixo: `"csv"` ou `"ofx"` conforme o tipo de arquivo | `mapCsvToTransactions:71` | 🟢 |
 | RN-10 | `installment_number` é preenchido se padrão N/M detectado na descrição | `detectInstallment():63` | 🟢 |
-| RN-11 | **Deduplicação no Client-side**: Transações com o mesmo `external_id` dentro do mesmo arquivo devem ser consolidadas (preservando a última ocorrência) antes do `upsert` para evitar erro `ON CONFLICT DO UPDATE` no Postgres. | `confirmImport` | 🔴 |
+| RN-11 | **Deduplicação no Client-side**: Transações com a mesma chave composta (`external_id|date|destination_id`) dentro do mesmo arquivo devem ser consolidadas (preservando a última ocorrência) antes do `upsert` para evitar erro `ON CONFLICT DO UPDATE` no Postgres. | `confirmImport` | 🟢 |
 | RN-12 | **Safe Area (Modais/Sheets)**: O modal de destino (Destination Picker) e a lista de categorias devem incluir `paddingBottom` baseado em `insets.bottom` para evitar sobreposição da barra de navegação nativa do Android/iOS. | UI/UX | 🟢 |
 
 ---

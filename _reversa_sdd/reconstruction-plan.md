@@ -267,12 +267,12 @@
 **Lê:** `_reversa_sdd/sdd/import-flows.md`, `_reversa_sdd/sdd/import.md`
 **Constrói:** Garantia de que o upsert por `external_id` sobrescreve **todos os campos relevantes** e implementação de deduplicação no frontend para evitar erros de conflito múltiplo
 **Detalhes:**
-- **Deduplicação Client-side:** Antes de chamar o `upsert`, o array de transações deve ser filtrado para garantir que não existam dois itens com o mesmo `external_id`. Caso existam, preservar a última ocorrência. Isso evita o erro: `On Conflict Do Update command cannot affect row a second time`.
-- **Sobrescrita de campos:** Revisar a chamada Supabase `upsert` em `mobile/src/screens/ImportScreen.tsx` para garantir que todos os campos (`account_id`, `credit_card_id`, `billing_month`, `amount`, `description`, `date`, `type`) estão explicitamente listados no payload do upsert.
+- **Deduplicação Client-side:** Antes de chamar o `upsert`, o array de transações deve ser filtrado por uma chave composta (`external_id` + `date` + destino). Caso existam, preservar a última ocorrência. Isso evita sobrescrita de parcelamentos recorrentes que compartilham o mesmo `external_id` mas têm datas diferentes, e evita o erro: `On Conflict Do Update command cannot affect row a second time`.
+- **Sobrescrita de campos:** Revisar a chamada Supabase `upsert` em `mobile/src/screens/ImportScreen.tsx` para garantir que `onConflict` usa a chave composta (`user_id,external_id,date,account_id,credit_card_id`).
 - **Mudar Source:** Garantir que quando o destino é conta bancária: `credit_card_id: null` e `billing_month: null` são passados explicitamente. Quando o destino é cartão: `account_id: null` é passado explicitamente.
-- **Preservar Categoria:** Usar `existingTxMap` para manter o `category_id` se a transação já existia no banco e não foi alterada manualmente no preview.
+- **Preservar Categoria:** Usar `existingTxMap` (mapeado pela mesma chave composta) para manter o `category_id` se a transação já existia no banco e não foi alterada manualmente no preview.
 - **Feedback:** Exibir no resumo de confirmação: quantas são novas, quantas serão atualizadas e quantas tiveram source alterado.
-**Pronto quando:** Reimportação de OFX/CSV funciona mesmo com duplicatas no arquivo (deduplicadas no frontend); transações mudam de fonte sem duplicar; erro `On Conflict Do Update` não ocorre mais.
+**Pronto quando:** Reimportação de OFX/CSV funciona mesmo com duplicatas no arquivo (deduplicadas no frontend pela chave composta); parcelamentos recorrentes não são indevidamente atualizados; erro `On Conflict Do Update` não ocorre mais.
 
 #### Tarefa 18-G — Correções de Filtros, Schema e Formatação de Datas
 **Status:** ✅ done
@@ -293,7 +293,7 @@
 **Lê:** `_reversa_sdd/sdd/transactions.md`
 **Constrói:** `TransactionEditSheet.tsx`, `updateTransaction` no hook, integração na `TransactionsScreen`
 **Concluído:**
-- **TransactionEditSheet criado** — bottom sheet (Modal + Animated.View) com drag handle, header "Editar transação" e botão X de fechar; campos: type pills em scroll horizontal, description TextInput, linha valor+data, category chips em scroll horizontal ("Sem categoria" como primeira opção = null); footer com botões Cancelar/Salvar; validação inline; KeyboardAvoidingView para iOS
+- **TransactionEditSheet criado** — bottom sheet (Modal + Animated.View) com drag handle, header "Editar transação" e botão X de fechar; campos: type pills em scroll horizontal, description TextInput, linha valor+data, category com autocomplete e busca inline (padrão do app); footer com botões Cancelar/Salvar; validação inline; KeyboardAvoidingView para iOS
 - **updateTransaction no useTransactions.ts** — novo método `updateTransaction(id, patch)` que executa `supabase.from('transactions').update({...}).eq('id', id)` e chama `refetch`; `TransactionPatch` importado de `TransactionEditSheet.tsx`
 - **TransactionsScreen integrada** — estado `editTarget` e `editSaving`; `onPressItem={(tx) => setEditTarget(tx)}` passado para `TransactionList`; `TransactionEditSheet` adicionado com `onSave={handleSaveEdit}` e `onClose={() => setEditTarget(null)}`
 - **Exports atualizados** — `index.ts` exporta `TransactionEditSheet` e `TransactionPatch`
@@ -356,13 +356,15 @@
 - Adicionar seletor de mês manual bidirecional ao gráfico.
 **Pronto quando:** O usuário conseguir navegar pelos meses, ver os gastos empilhados por cor de cartão e gerenciar as transações daquela fatura específica na lista inferior.
 
-#### Tarefa 18-N — Filtro de Cartões no Dashboard Principal
+#### Tarefa 18-N — Dados de Cartões no Dashboard Principal por Fatura
 **Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/dashboard.md` (RN-09)
-**Constrói:** Atualização no `useDashboard.ts` (ou backend) para ignorar transações de cartão de crédito.
+**Constrói:** Atualização no `useDashboard.ts` para agrupar transações de cartão de crédito pela data da fatura (`billing_month`).
 **Detalhes:**
-- Garantir que `monthlyData` (MonthlyChart e Resumo) e `categorySlices` (CategoryChart) não contabilizem nenhuma transação onde `credit_card_id IS NOT NULL` quando acessados pela visão principal (sem filtro de conta/cartão).
-**Pronto quando:** Os gráficos e resumos do Dashboard Principal não incluírem mais os gastos do cartão de crédito, refletindo estritamente as movimentações das contas bancárias (e ignorando faturas até que sejam pagas).
+- Modificar o `useDashboard.ts` para incluir transações onde `credit_card_id IS NOT NULL` nos gráficos `MonthlyChart` e `CategoryChart`.
+- Ao agrupar transações de cartão por mês, utilizar o campo `billing_month` (mês da fatura) em vez do campo `date` (data da transação), para evitar que compras feitas em um mês caiam no mês errado da fatura.
+- Continuar ignorando transações do tipo `card_payment` para não duplicar os gastos (as transações individuais do cartão já estarão contabilizadas).
+**Pronto quando:** Os gráficos e resumos do Dashboard Principal exibirem os gastos do cartão de crédito no mês correto da respectiva fatura, e o status de `useDashboard` refletir a RN-09 atualizada.
 
 #### Tarefa 18-O — Componente BulkDeleteSheet
 **Status:** ✅ done

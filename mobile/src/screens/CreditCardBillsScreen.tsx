@@ -13,15 +13,13 @@ import { BarChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TransactionEditSheet, TransactionList } from '@/components/transactions';
-import { AppHeader, BulkDeleteSheet } from '@/components/ui';
+import { AppHeader } from '@/components/ui';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useCreditCardBills } from '@/hooks/useCreditCardBills';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Transaction } from '@/types';
 import { formatCurrency } from '@/utils/transactions';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 
 function addMonth(my: string, delta: 1 | -1): string {
     const [mStr, yStr] = my.split('/');
@@ -48,7 +46,6 @@ export function CreditCardBillsScreen() {
     const borderColor = isDark ? '#2d3550' : '#e5e7eb';
 
     const { openMenu } = useSideMenu();
-    const { user } = useAuth();
     const {
         selectedMonth,
         setSelectedMonth,
@@ -135,7 +132,7 @@ export function CreditCardBillsScreen() {
             ) : (
                 <View style={{ flex: 1 }}>
                     {/* Header macro area */}
-                    <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
 
                         {/* Stacked Chart */}
                         <View
