@@ -148,6 +148,7 @@ export function InstallmentsScreen() {
     const [saving, setSaving] = useState(false);
     const [detectSheetOpen, setDetectSheetOpen] = useState(false);
     const [dialog, setDialog] = useState<DialogConfig>({ visible: false, type: 'info', title: '', message: '' });
+    const [pendingCandidate, setPendingCandidate] = useState<(() => void) | null>(null);
 
     const { translateY, panHandlers, resetTranslate } = useSwipeToDismiss(() => closeSheet());
 
@@ -164,7 +165,9 @@ export function InstallmentsScreen() {
     const closeDialog = () => setDialog((d) => ({ ...d, visible: false }));
 
     // ── Sheet open/close ───────────────────────────────────────────────
-    const openSheet = (group?: InstallmentGroup | null, prefill?: SmartCandidate) => {
+    const openSheet = (group?: InstallmentGroup | null, prefill?: SmartCandidate, onSuccess?: () => void) => {
+        if (onSuccess) setPendingCandidate(() => onSuccess);
+
         if (group) {
             setEditing(group);
             setForm({
@@ -197,6 +200,7 @@ export function InstallmentsScreen() {
         setSheetOpen(false);
         setEditing(null);
         setForm(EMPTY_FORM);
+        setPendingCandidate(null);
     };
 
     // ── Save ───────────────────────────────────────────────────────────
@@ -248,6 +252,7 @@ export function InstallmentsScreen() {
             } else {
                 await insertGroup(payload);
             }
+            if (pendingCandidate) pendingCandidate();
             closeSheet();
         } catch (err: unknown) {
             showDialog({
@@ -258,7 +263,7 @@ export function InstallmentsScreen() {
         } finally {
             setSaving(false);
         }
-    }, [form, editing, insertGroup, updateGroup]);
+    }, [form, editing, insertGroup, updateGroup, pendingCandidate]);
 
     // ── Delete ─────────────────────────────────────────────────────────
     const handleDelete = (group: InstallmentGroup) => {
@@ -690,7 +695,7 @@ export function InstallmentsScreen() {
             <SmartDetectSheet
                 visible={detectSheetOpen}
                 onClose={() => setDetectSheetOpen(false)}
-                onPrefillInstallment={(c) => openSheet(null, c)}
+                onPrefillInstallment={(c, onSuccess) => openSheet(null, c, onSuccess)}
             />
         </View>
     );

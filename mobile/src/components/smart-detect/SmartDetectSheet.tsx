@@ -17,8 +17,8 @@ import { useSmartDetect, SmartCandidate } from '@/hooks/useSmartDetect';
 interface SmartDetectSheetProps {
     visible: boolean;
     onClose: () => void;
-    onPrefillInstallment?: (candidate: SmartCandidate) => void;
-    onPrefillSubscription?: (candidate: SmartCandidate) => void;
+    onPrefillInstallment?: (candidate: SmartCandidate, onSuccess: () => void) => void;
+    onPrefillSubscription?: (candidate: SmartCandidate, onSuccess: () => void) => void;
 }
 
 function formatBRL(value: number): string {
@@ -81,15 +81,13 @@ export function SmartDetectSheet({
 
     const handleCreateInstallment = (c: SmartCandidate) => {
         if (onPrefillInstallment) {
-            onPrefillInstallment(c);
-            markCreated(c.id);
+            onPrefillInstallment(c, () => markCreated(c.id));
         }
     };
 
     const handleCreateSubscription = (c: SmartCandidate) => {
         if (onPrefillSubscription) {
-            onPrefillSubscription(c);
-            markCreated(c.id);
+            onPrefillSubscription(c, () => markCreated(c.id));
         }
     };
 

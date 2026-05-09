@@ -167,7 +167,6 @@ export function useSmartDetect(): UseSmartDetectReturn {
             const { data: txData, error: txErr } = await supabase
                 .from('transactions')
                 .select('id, description, amount, date, type')
-                .is('credit_card_id', null)
                 .gte('date', from)
                 .order('date', { ascending: true });
 

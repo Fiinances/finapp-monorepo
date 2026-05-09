@@ -162,6 +162,7 @@ export function SubscriptionsScreen() {
     const [saving, setSaving] = useState(false);
     const [detectSheetOpen, setDetectSheetOpen] = useState(false);
     const [dialog, setDialog] = useState<DialogConfig>({ visible: false, type: 'info', title: '', message: '' });
+    const [pendingCandidate, setPendingCandidate] = useState<(() => void) | null>(null);
 
     const { translateY, panHandlers, resetTranslate } = useSwipeToDismiss(() => closeSheet());
 
@@ -181,7 +182,9 @@ export function SubscriptionsScreen() {
     const closeDialog = () => setDialog((d) => ({ ...d, visible: false }));
 
     // ── Sheet open/close ───────────────────────────────────────────────
-    const openSheet = (sub?: Subscription | null, prefill?: SmartCandidate) => {
+    const openSheet = (sub?: Subscription | null, prefill?: SmartCandidate, onSuccess?: () => void) => {
+        if (onSuccess) setPendingCandidate(() => onSuccess);
+
         if (sub) {
             setEditing(sub);
             setForm({
@@ -222,6 +225,7 @@ export function SubscriptionsScreen() {
         setSheetOpen(false);
         setEditing(null);
         setForm(EMPTY_FORM);
+        setPendingCandidate(null);
     };
 
     // ── Save ───────────────────────────────────────────────────────────
@@ -256,6 +260,7 @@ export function SubscriptionsScreen() {
             } else {
                 await insertSubscription(payload);
             }
+            if (pendingCandidate) pendingCandidate();
             closeSheet();
         } catch (err: unknown) {
             showDialog({
@@ -266,7 +271,7 @@ export function SubscriptionsScreen() {
         } finally {
             setSaving(false);
         }
-    }, [form, editing, insertSubscription, updateSubscription]);
+    }, [form, editing, insertSubscription, updateSubscription, pendingCandidate]);
 
     // ── Delete ─────────────────────────────────────────────────────────
     const handleDelete = (sub: Subscription) => {
@@ -788,7 +793,7 @@ export function SubscriptionsScreen() {
             <SmartDetectSheet
                 visible={detectSheetOpen}
                 onClose={() => setDetectSheetOpen(false)}
-                onPrefillSubscription={(c) => openSheet(null, c)}
+                onPrefillSubscription={(c, onSuccess) => openSheet(null, c, onSuccess)}
             />
         </View>
     );
