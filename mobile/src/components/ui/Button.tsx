@@ -5,6 +5,7 @@ import {
     PressableProps,
     Text,
 } from 'react-native';
+import { typography } from '@/theme';
 
 interface ButtonProps extends PressableProps {
     label: string;
@@ -51,7 +52,10 @@ export function Button({
                     color={variant === 'primary' ? '#ffffff' : '#1a1f2e'}
                 />
             ) : (
-                <Text className={`text-sm font-semibold ${labelStyles[variant]}`}>
+                <Text
+                    className={`text-sm ${labelStyles[variant]}`}
+                    style={{ fontFamily: typography.fontFamily.semiBold }}
+                >
                     {label}
                 </Text>
             )}

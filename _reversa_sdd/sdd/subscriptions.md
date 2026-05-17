@@ -45,7 +45,16 @@
 
 ## 4. Layout e Estrutura
 
-### 4.1 Cards de métricas (4 colunas responsivas)
+### 4.1 Header da página
+
+```
+"Assinaturas" (h1)
+Botões:
+  [Detectar] → abre SmartDetectSheet com mode="subscription"
+  [Nova assinatura] → abre SubscriptionSheet de criação
+```
+
+### 4.2 Cards de métricas (4 colunas responsivas)
 
 | Card | Cálculo | Cor |
 |---|---|---|

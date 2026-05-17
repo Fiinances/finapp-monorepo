@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/types';
+import { typography } from '@/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ResetPassword'>;
 
@@ -110,10 +111,10 @@ export function ResetPasswordScreen({ route }: Props) {
     if (success) {
         return (
             <SafeAreaView className="flex-1 bg-white dark:bg-[#0f1117] justify-center items-center px-6">
-                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-3 text-center">
+                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-3 text-center" style={{ fontFamily: typography.fontFamily.bold }}>
                     Senha redefinida!
                 </Text>
-                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] text-center">
+                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] text-center" style={{ fontFamily: typography.fontFamily.regular }}>
                     Redirecionando para o app…
                 </Text>
             </SafeAreaView>
@@ -126,16 +127,16 @@ export function ResetPasswordScreen({ route }: Props) {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 className="flex-1 justify-center px-6"
             >
-                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2">
+                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2" style={{ fontFamily: typography.fontFamily.bold }}>
                     Redefinir senha
                 </Text>
-                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8">
+                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8" style={{ fontFamily: typography.fontFamily.regular }}>
                     Código enviado para{' '}
-                    <Text className="font-semibold text-[#1a1f2e] dark:text-[#f8f9fc]">{email}</Text>
+                    <Text className="font-semibold text-[#1a1f2e] dark:text-[#f8f9fc]" style={{ fontFamily: typography.fontFamily.semiBold }}>{email}</Text>
                 </Text>
 
                 {/* Código OTP */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Código de verificação
                 </Text>
                 <TextInput
@@ -149,6 +150,7 @@ export function ResetPasswordScreen({ route }: Props) {
                         setOtp(v.replace(/\D/g, ''));
                         if (fieldErrors.otp) setFieldErrors((prev) => ({ ...prev, otp: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.medium }}
                 />
                 {fieldErrors.otp ? (
                     <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.otp}</Text>
@@ -157,7 +159,7 @@ export function ResetPasswordScreen({ route }: Props) {
                 )}
 
                 {/* Nova senha */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Nova senha
                 </Text>
                 <TextInput
@@ -170,6 +172,7 @@ export function ResetPasswordScreen({ route }: Props) {
                         setPassword(v);
                         if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {password.length > 0 && (
                     <View className="mt-2">
@@ -200,7 +203,7 @@ export function ResetPasswordScreen({ route }: Props) {
                 )}
 
                 {/* Confirmar senha */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Confirmar nova senha
                 </Text>
                 <TextInput
@@ -213,6 +216,7 @@ export function ResetPasswordScreen({ route }: Props) {
                         setConfirm(v);
                         if (fieldErrors.confirm) setFieldErrors((prev) => ({ ...prev, confirm: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {fieldErrors.confirm ? (
                     <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.confirm}</Text>
@@ -229,7 +233,7 @@ export function ResetPasswordScreen({ route }: Props) {
                     disabled={loading}
                     className={`rounded-lg py-3 items-center mt-2 ${loading ? 'bg-[#1a1f2e]/50 dark:bg-[#e5e7eb]/50' : 'bg-[#1a1f2e] dark:bg-[#e5e7eb]'}`}
                 >
-                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]">
+                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                         {loading ? 'Redefinindo…' : 'Redefinir senha'}
                     </Text>
                 </Pressable>

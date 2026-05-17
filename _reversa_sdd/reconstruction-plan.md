@@ -6,7 +6,7 @@
 - **Database:** Supabase (PostgreSQL)
 - **Deployment:** Vercel (Backend) + Supabase (DB/Auth)
 **Gerado em:** 2026-05-03 | **Atualizado em:** 2026-05-06
-**Status:** 37 tarefas | 23 concluídas | 14 pendentes
+**Status:** 37 tarefas | 24 concluídas | 13 pendentes
 
 ---
 
@@ -387,29 +387,32 @@
 **Lê:** `_reversa_sdd/sdd/smart-detect.md`
 **Constrói:** `hooks/useSmartDetect.ts` — algoritmo de detecção de padrões de parcelamento e assinatura em transações bancárias existentes.
 **Detalhes:**
-- Busca transações bancárias dos últimos 12 meses via Supabase (`credit_card_id IS NULL`).
+- Busca transações bancárias dos últimos 6 meses via Supabase (`credit_card_id IS NULL`).
+- Para cada transação, registra se a descrição bruta contém padrão N/M (`hasInstallmentPattern`).
 - Normaliza descrições (remove numeração de parcelas, pontuação, espaços extras).
 - Agrupa por descrição normalizada → filtra grupos com ≥ 2 ocorrências.
-- Calcula variação de valor e intervalo entre datas para classificar como `installment` ou `subscription`.
-- Confiança: `high` (variação < 2%), `medium` (< 5%), `low` (≥ 5%).
+- **Prioridade 1 (sinal forte):** grupos com padrão N/M → `suggestedType='installment'`, `hasInstallmentPattern=true`, `confidence='high'`.
+- **Prioridade 2 (heurística fallback):** variação < 2% e count ≤ 24 → `installment`; demais → `subscription`.
+- Confiança: `high` (variação < 2% ou `hasInstallmentPattern`), `medium` (< 5%), `low` (≥ 5%).
 - Filtra candidatos cujas descrições já existem em `installment_groups` ou `subscriptions`.
-- Retorna: `{ loading, error, candidates, analyze, dismiss }`.
-**Pronto quando:** `analyze()` retorna lista de `SmartCandidate[]` com classificação correta para transações recorrentes no banco.
+- Retorna: `{ loading, error, candidates, analyze, dismiss, markCreated, created, dismissed }`.
+- `SmartCandidate` inclui campo `hasInstallmentPattern: boolean`.
+**Pronto quando:** `analyze()` retorna lista de `SmartCandidate[]`; assinaturas sem padrão N/M são classificadas como `subscription` mesmo com variação < 2%; parcelamentos com padrão N/M são classificados como `installment` com `confidence='high'`.
 
 #### Tarefa 18-R — Tela `SmartDetectSheet`
 **Status:** ✅ done
 **Lê:** `_reversa_sdd/sdd/smart-detect.md`, `_reversa_sdd/sdd/installments.md`, `_reversa_sdd/sdd/subscriptions.md`
 **Constrói:** `components/smart-detect/SmartDetectSheet.tsx` — bottom sheet de revisão de candidatos detectados, integrado nas telas de Parcelamentos e Assinaturas.
 **Detalhes:**
-- Bottom sheet com lista de candidatos, tabs "Parcelamentos / Assinaturas" para filtrar.
-- Card por candidato: nome, valor, período detectado, confiança visual, 3 botões de ação.
-- Botão "Criar como Parcelamento" → abre `InstallmentCreateSheet` pré-preenchido.
-- Botão "Criar como Assinatura" → abre `SubscriptionSheet` pré-preenchido.
-- Botão "Ignorar" → remove candidato da lista local (sem gravação no banco).
-- Após criação bem-sucedida: candidato exibe badge "✅ Criado".
+- Recebe prop `mode: 'installment' | 'subscription'` — não há tabs.
+- Filtra `candidates` por `candidate.suggestedType === mode` para exibir apenas os candidatos do tipo correto.
+- Card por candidato: nome, valor, período detectado, confiança visual, 2 botões de ação.
+- Botão "Criar" contextual: "Criar Parcelamento" (mode=installment) → abre `InstallmentCreateSheet` pré-preenchido; "Criar Assinatura" (mode=subscription) → abre `SubscriptionSheet` pré-preenchido.
+- Botão "Ignorar" → remove candidato da lista local via `dismiss(id)` (sem gravação no banco).
+- Após criação bem-sucedida: chama `markCreated(id)`, candidato exibe badge "✅ Criado".
 - Estado vazio: mensagem orientando o usuário a importar mais transações.
-- Adicionar botão `[Detectar]` no header de `InstallmentsScreen` e `SubscriptionsScreen`.
-**Pronto quando:** Usuário aciona detecção em qualquer uma das telas, vê os candidatos, consegue criar um parcelamento e uma assinatura a partir da análise, e o resultado é corretamente persistido no banco.
+- `InstallmentsScreen` passa `mode="installment"` ao abrir; `SubscriptionsScreen` passa `mode="subscription"`.
+**Pronto quando:** Tela de Parcelamentos mostra apenas candidatos `installment`; Tela de Assinaturas mostra apenas candidatos `subscription`; Netflix com 24 ocorrências e sem padrão N/M nunca aparece em Parcelamentos.
 
 #### Tarefa 18-S — Migração de Schema: `import_records` + `transactions.import_id`
 **Status:** ✅ done
@@ -457,7 +460,12 @@
 **Pronto quando:** Auto-categorização funcional via backend.
 
 #### Tarefa 22 — Polimento de UI/UX (Poppins & Themes)
-**Status:** pending
+**Status:** ✅ done
 **Lê:** `_reversa_sdd/design-system/`
 **Constrói:** Ajustes finais de design, fonte Poppins e contraste nos temas
+**Concluído:**
+- Fonte **Poppins** carregada no bootstrap do app (`@expo-google-fonts/poppins`) com fallback de loading antes da renderização.
+- Componentes compartilhados de UI (`AppHeader`, `Typography`, `Button`) atualizados para usar famílias Poppins (regular/medium/semiBold/bold) conforme os tokens de tipografia.
+- Telas de autenticação (`Login`, `Register`, `ForgotPassword`, `ResetPassword`) ajustadas para aplicar Poppins em títulos, labels, inputs e CTAs.
+- Tokens dark mode refinados no `tailwind.config.js` para melhor contraste (`secondary-dark`, `muted-dark`, `border-dark`) em superfícies e textos secundários.
 **Pronto quando:** App visualmente premium em Light e Dark mode.

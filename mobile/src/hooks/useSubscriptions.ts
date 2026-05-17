@@ -24,8 +24,8 @@ export function resolveAccountName(
         const card = creditCards.find((c) => c.id === sub.credit_card_id);
         return card?.name ?? '—';
     }
-    if (sub.bank_account_id) {
-        const acc = accounts.find((a) => a.id === sub.bank_account_id);
+    if (sub.account_id) {
+        const acc = accounts.find((a) => a.id === sub.account_id);
         return acc?.name ?? '—';
     }
     return '—';
@@ -48,7 +48,7 @@ interface UseSubscriptionsReturn {
         data: Partial<Omit<Subscription, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
     ) => Promise<void>;
     deleteSubscription: (id: number) => Promise<void>;
-    toggleActive: (id: number, current: 0 | 1) => Promise<void>;
+    toggleActive: (id: number, current: boolean) => Promise<void>;
 }
 
 export function useSubscriptions(): UseSubscriptionsReturn {
@@ -135,8 +135,8 @@ export function useSubscriptions(): UseSubscriptionsReturn {
     }, [fetchAll]);
 
     /** Optimistic toggle — flips local state immediately, then persists */
-    const toggleActive = useCallback(async (id: number, current: 0 | 1) => {
-        const newValue: 0 | 1 = current === 1 ? 0 : 1;
+    const toggleActive = useCallback(async (id: number, current: boolean) => {
+        const newValue = !current;
         setSubscriptions((prev) =>
             prev.map((s) => (s.id === id ? { ...s, active: newValue } : s)),
         );

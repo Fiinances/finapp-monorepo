@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/types';
+import { typography } from '@/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -39,14 +40,14 @@ export function LoginScreen({ navigation }: Props) {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 className="flex-1 justify-center px-6"
             >
-                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2">
+                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2" style={{ fontFamily: typography.fontFamily.bold }}>
                     Finapp
                 </Text>
-                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8">
+                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8" style={{ fontFamily: typography.fontFamily.regular }}>
                     Controle financeiro pessoal
                 </Text>
 
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     E-mail
                 </Text>
                 <TextInput
@@ -58,9 +59,10 @@ export function LoginScreen({ navigation }: Props) {
                     autoCorrect={false}
                     value={email}
                     onChangeText={setEmail}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
 
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Senha
                 </Text>
                 <TextInput
@@ -70,6 +72,7 @@ export function LoginScreen({ navigation }: Props) {
                     secureTextEntry
                     value={password}
                     onChangeText={setPassword}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
 
                 <Pressable
@@ -77,7 +80,7 @@ export function LoginScreen({ navigation }: Props) {
                     disabled={loading}
                     className={`rounded-lg py-3 items-center ${loading ? 'bg-[#1a1f2e]/50 dark:bg-[#e5e7eb]/50' : 'bg-[#1a1f2e] dark:bg-[#e5e7eb]'}`}
                 >
-                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]">
+                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                         {loading ? 'Entrando…' : 'Entrar'}
                     </Text>
                 </Pressable>
@@ -86,9 +89,9 @@ export function LoginScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate('Register')}
                     className="mt-4 items-center"
                 >
-                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">
+                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]" style={{ fontFamily: typography.fontFamily.regular }}>
                         Não tem conta?{' '}
-                        <Text className="font-semibold text-[#1a1f2e] dark:text-[#e5e7eb]">
+                        <Text className="font-semibold text-[#1a1f2e] dark:text-[#e5e7eb]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                             Cadastrar
                         </Text>
                     </Text>
@@ -98,9 +101,9 @@ export function LoginScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate('ForgotPassword')}
                     className="mt-3 items-center"
                 >
-                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">
+                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]" style={{ fontFamily: typography.fontFamily.regular }}>
                         Esqueceu a senha?{' '}
-                        <Text className="font-semibold text-[#6366f1]">
+                        <Text className="font-semibold text-[#6366f1]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                             Redefinir
                         </Text>
                     </Text>

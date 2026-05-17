@@ -1,3 +1,4 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Feather } from '@expo/vector-icons';
 import { useSideMenu } from '@/contexts/SideMenuContext';
 import React, { useCallback, useRef, useState } from 'react';
@@ -47,9 +48,9 @@ interface FormState {
     next_due: string;
     category: string;
     color: string;
-    bank_account_id: string;
+    account_id: string;
     credit_card_id: string;
-    active: 0 | 1;
+    active: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -62,9 +63,9 @@ const EMPTY_FORM: FormState = {
     next_due: '',
     category: '',
     color: '',
-    bank_account_id: '',
+    account_id: '',
     credit_card_id: '',
-    active: 1,
+    active: true,
 };
 
 const PERIOD_LABELS: Record<SubscriptionPeriod, string> = {
@@ -72,6 +73,11 @@ const PERIOD_LABELS: Record<SubscriptionPeriod, string> = {
     monthly: 'Mensal',
     yearly: 'Anual',
 };
+
+const SUBSCRIPTION_COLORS = [
+    '#6366f1', '#3b82f6', '#10b981', '#14b8a6',
+    '#f59e0b', '#f97316', '#ef4444', '#8b5cf6',
+];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -88,7 +94,7 @@ function currencyMask(input: string): string {
     const digits = input.replace(/\D/g, '');
     if (!digits) return '';
     const num = parseInt(digits, 10) / 100;
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** Returns true if next_due is within the next 7 days (inclusive) */
@@ -107,6 +113,36 @@ function formatDate(iso: string | null | undefined): string {
     if (!iso) return '';
     const [y, m, d] = iso.split('-');
     return `${d}/${m}/${y}`;
+}
+
+function dateToISO(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function isoToDate(iso: string | null | undefined): Date | null {
+    if (!iso) return null;
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+}
+
+function normalizeColorForDb(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+    return trimmed;
+}
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof Error && err.message) return err.message;
+    if (err && typeof err === 'object' && 'message' in err) {
+        const msg = (err as { message?: unknown }).message;
+        if (typeof msg === 'string' && msg.trim()) return msg;
+    }
+    return fallback;
 }
 
 /** useSwipeToDismiss – pan gesture to close bottom sheet */
@@ -161,13 +197,14 @@ export function SubscriptionsScreen() {
     const [form, setForm] = useState<FormState>(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [detectSheetOpen, setDetectSheetOpen] = useState(false);
+    const [showNextDuePicker, setShowNextDuePicker] = useState(false);
     const [dialog, setDialog] = useState<DialogConfig>({ visible: false, type: 'info', title: '', message: '' });
     const [pendingCandidate, setPendingCandidate] = useState<(() => void) | null>(null);
 
     const { translateY, panHandlers, resetTranslate } = useSwipeToDismiss(() => closeSheet());
 
     // ── Metrics ────────────────────────────────────────────────────────
-    const active = subscriptions.filter((s) => s.active === 1);
+    const active = subscriptions.filter((s) => s.active);
     const activeExpenseMonthly = active
         .filter((s) => s.type === 'expense')
         .reduce((sum, s) => sum + monthlyEquivalent(s), 0);
@@ -189,13 +226,13 @@ export function SubscriptionsScreen() {
             setEditing(sub);
             setForm({
                 name: sub.name,
-                amount: sub.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                amount: currencyMask(String(Math.round(sub.amount * 100))),
                 type: sub.type,
                 period: sub.period,
                 next_due: sub.next_due ?? '',
                 category: sub.category ?? '',
                 color: sub.color ?? '',
-                bank_account_id: sub.bank_account_id ? String(sub.bank_account_id) : '',
+                account_id: sub.account_id ? String(sub.account_id) : '',
                 credit_card_id: sub.credit_card_id ? String(sub.credit_card_id) : '',
                 active: sub.active,
             });
@@ -203,15 +240,15 @@ export function SubscriptionsScreen() {
             setEditing(null);
             setForm({
                 name: prefill.displayName,
-                amount: prefill.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                amount: currencyMask(String(Math.round(prefill.amount * 100))),
                 type: 'expense',
                 period: prefill.interval,
                 next_due: '',
                 category: '',
                 color: '',
-                bank_account_id: '',
+                account_id: '',
                 credit_card_id: '',
-                active: 1,
+                active: true,
             });
         } else {
             setEditing(null);
@@ -225,6 +262,7 @@ export function SubscriptionsScreen() {
         setSheetOpen(false);
         setEditing(null);
         setForm(EMPTY_FORM);
+        setShowNextDuePicker(false);
         setPendingCandidate(null);
     };
 
@@ -249,8 +287,8 @@ export function SubscriptionsScreen() {
                 period: form.period,
                 next_due: form.next_due.trim() || null,
                 category: form.category.trim() || null,
-                color: form.color.trim() || null,
-                bank_account_id: form.bank_account_id ? Number(form.bank_account_id) : null,
+                color: normalizeColorForDb(form.color),
+                account_id: form.account_id ? Number(form.account_id) : null,
                 credit_card_id: form.credit_card_id ? Number(form.credit_card_id) : null,
                 active: form.active,
             };
@@ -266,7 +304,7 @@ export function SubscriptionsScreen() {
             showDialog({
                 type: 'error',
                 title: 'Erro ao salvar',
-                message: err instanceof Error ? err.message : 'Não foi possível salvar a assinatura.',
+                message: extractErrorMessage(err, 'Não foi possível salvar a assinatura.'),
             });
         } finally {
             setSaving(false);
@@ -309,7 +347,8 @@ export function SubscriptionsScreen() {
 
     // ── Render list item ───────────────────────────────────────────────
     const renderItem = ({ item }: { item: Subscription }) => {
-        const isActive = item.active === 1;
+        console.log('rendering item', item.active);
+        const isActive = item.active;
         const dotColor = item.color ?? '#6366f1';
         const amountColor = item.type === 'expense' ? '#ef4444' : '#22c55e';
         const monthly = monthlyEquivalent(item);
@@ -585,7 +624,7 @@ export function SubscriptionsScreen() {
                                 <TextInput
                                     value={form.amount}
                                     onChangeText={(t) => setForm((f) => ({ ...f, amount: currencyMask(t) }))}
-                                    placeholder="0,00"
+                                    placeholder="R$ 0,00"
                                     placeholderTextColor={labelColor}
                                     keyboardType="numeric"
                                     style={{ flex: 1, color: textColor, fontSize: 14, paddingVertical: 12, paddingHorizontal: 14 }}
@@ -648,14 +687,37 @@ export function SubscriptionsScreen() {
                             </View>
 
                             {/* Next due */}
-                            <FormField label="Próximo vencimento (AAAA-MM-DD)" labelColor={labelColor} borderColor={borderColor} inputBg={inputBg}>
-                                <TextInput
-                                    value={form.next_due}
-                                    onChangeText={(t) => setForm((f) => ({ ...f, next_due: t }))}
-                                    placeholder="2025-01-15"
-                                    placeholderTextColor={labelColor}
-                                    style={{ flex: 1, color: textColor, fontSize: 14, paddingVertical: 12, paddingHorizontal: 14 }}
-                                />
+                            <FormField label="Próximo vencimento (DD/MM/YYYY)" labelColor={labelColor} borderColor={borderColor} inputBg={inputBg}>
+                                <TouchableOpacity
+                                    onPress={() => setShowNextDuePicker(true)}
+                                    activeOpacity={0.8}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        paddingHorizontal: 14,
+                                        gap: 8,
+                                    }}
+                                >
+                                    <Feather name="calendar" size={15} color={labelColor} />
+                                    <Text
+                                        style={{
+                                            flex: 1,
+                                            color: form.next_due ? textColor : labelColor,
+                                            fontSize: 14,
+                                        }}
+                                    >
+                                        {form.next_due ? formatDate(form.next_due) : 'Selecionar data'}
+                                    </Text>
+                                    {form.next_due ? (
+                                        <TouchableOpacity
+                                            onPress={() => setForm((f) => ({ ...f, next_due: '' }))}
+                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                            <Feather name="x-circle" size={16} color={labelColor} />
+                                        </TouchableOpacity>
+                                    ) : null}
+                                </TouchableOpacity>
                             </FormField>
 
                             {/* Category */}
@@ -670,26 +732,19 @@ export function SubscriptionsScreen() {
                             </FormField>
 
                             {/* Color */}
-                            <FormField label="Cor (hex, opcional)" labelColor={labelColor} borderColor={borderColor} inputBg={inputBg}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 14 }}>
-                                    {form.color ? (
-                                        <View
-                                            style={{
-                                                width: 18, height: 18, borderRadius: 9,
-                                                backgroundColor: form.color,
-                                                marginRight: 8,
-                                            }}
-                                        />
-                                    ) : null}
-                                    <TextInput
-                                        value={form.color}
-                                        onChangeText={(t) => setForm((f) => ({ ...f, color: t }))}
-                                        placeholder="#6366f1"
-                                        placeholderTextColor={labelColor}
-                                        style={{ flex: 1, color: textColor, fontSize: 14, paddingVertical: 12, paddingRight: 14 }}
-                                    />
-                                </View>
-                            </FormField>
+                            <View style={{ marginBottom: 14 }}>
+                                <Text style={{ color: labelColor, fontSize: 13, fontWeight: '500', marginBottom: 8 }}>
+                                    Cor (opcional)
+                                </Text>
+
+                                <ColorPicker
+                                    selected={form.color}
+                                    onSelect={(c) => setForm((f) => ({ ...f, color: c }))}
+                                    borderColor={borderColor}
+                                    inputBg={inputBg}
+                                    isDark={isDark}
+                                />
+                            </View>
 
                             {/* Account/card selector */}
                             <View style={{ marginBottom: 14 }}>
@@ -701,25 +756,25 @@ export function SubscriptionsScreen() {
                                     contentContainerStyle={{ gap: 8 }}
                                 >
                                     <TouchableOpacity
-                                        onPress={() => setForm((f) => ({ ...f, bank_account_id: '', credit_card_id: '' }))}
+                                        onPress={() => setForm((f) => ({ ...f, account_id: '', credit_card_id: '' }))}
                                         style={{
                                             paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20,
                                             borderWidth: 1.5,
-                                            borderColor: !form.bank_account_id && !form.credit_card_id ? '#6366f1' : borderColor,
-                                            backgroundColor: !form.bank_account_id && !form.credit_card_id ? '#6366f120' : inputBg,
+                                            borderColor: !form.account_id && !form.credit_card_id ? '#6366f1' : borderColor,
+                                            backgroundColor: !form.account_id && !form.credit_card_id ? '#6366f120' : inputBg,
                                         }}
                                     >
-                                        <Text style={{ color: !form.bank_account_id && !form.credit_card_id ? '#6366f1' : textColor, fontSize: 12 }}>
+                                        <Text style={{ color: !form.account_id && !form.credit_card_id ? '#6366f1' : textColor, fontSize: 12 }}>
                                             Nenhum
                                         </Text>
                                     </TouchableOpacity>
                                     {accounts.map((acc) => {
-                                        const selected = form.bank_account_id === String(acc.id);
+                                        const selected = form.account_id === String(acc.id);
                                         const color = acc.color ?? '#6366f1';
                                         return (
                                             <TouchableOpacity
                                                 key={`acc-${acc.id}`}
-                                                onPress={() => setForm((f) => ({ ...f, bank_account_id: String(acc.id), credit_card_id: '' }))}
+                                                onPress={() => setForm((f) => ({ ...f, account_id: String(acc.id), credit_card_id: '' }))}
                                                 style={{
                                                     paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20,
                                                     borderWidth: 1.5,
@@ -739,7 +794,7 @@ export function SubscriptionsScreen() {
                                         return (
                                             <TouchableOpacity
                                                 key={`card-${card.id}`}
-                                                onPress={() => setForm((f) => ({ ...f, credit_card_id: String(card.id), bank_account_id: '' }))}
+                                                onPress={() => setForm((f) => ({ ...f, credit_card_id: String(card.id), account_id: '' }))}
                                                 style={{
                                                     paddingVertical: 8, paddingHorizontal: 14, borderRadius: 20,
                                                     borderWidth: 1.5,
@@ -790,9 +845,60 @@ export function SubscriptionsScreen() {
                 labelColor={labelColor}
             />
 
+            {Platform.OS === 'ios' && (
+                <Modal transparent animationType="fade" visible={showNextDuePicker} statusBarTranslucent>
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() => setShowNextDuePicker(false)}
+                        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => { }}
+                            style={{ backgroundColor: bgCard, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingBottom: 32 }}
+                        >
+                            <DateTimePicker
+                                value={isoToDate(form.next_due) ?? new Date()}
+                                mode="date"
+                                display="spinner"
+                                locale="pt-BR"
+                                textColor={textColor}
+                                onChange={(_, date) => {
+                                    if (date) {
+                                        setForm((f) => ({ ...f, next_due: dateToISO(date) }));
+                                    }
+                                }}
+                                style={{ backgroundColor: bgCard }}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowNextDuePicker(false)}
+                                style={{ marginHorizontal: 16, paddingVertical: 14, backgroundColor: '#6366f1', borderRadius: 14, alignItems: 'center' }}
+                            >
+                                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Confirmar</Text>
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </Modal>
+            )}
+
+            {showNextDuePicker && Platform.OS === 'android' && (
+                <DateTimePicker
+                    value={isoToDate(form.next_due) ?? new Date()}
+                    mode="date"
+                    display="calendar"
+                    onChange={(_, date) => {
+                        setShowNextDuePicker(false);
+                        if (date) {
+                            setForm((f) => ({ ...f, next_due: dateToISO(date) }));
+                        }
+                    }}
+                />
+            )}
+
             <SmartDetectSheet
                 visible={detectSheetOpen}
                 onClose={() => setDetectSheetOpen(false)}
+                mode="subscription"
                 onPrefillSubscription={(c, onSuccess) => openSheet(null, c, onSuccess)}
             />
         </View>
@@ -832,6 +938,62 @@ function MetricCard({ label, value, color, icon, bgCard, textColor, labelColor }
                 {value}
             </Text>
             <Text style={{ color: labelColor, fontSize: 10, lineHeight: 13 }}>{label}</Text>
+        </View>
+    );
+}
+
+function ColorPicker({
+    selected,
+    onSelect,
+    borderColor,
+    inputBg,
+    isDark,
+}: {
+    selected: string;
+    onSelect: (c: string) => void;
+    borderColor: string;
+    inputBg: string;
+    isDark: boolean;
+}) {
+    return (
+        <View style={{ marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <TouchableOpacity
+                    onPress={() => onSelect('')}
+                    style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 15,
+                        backgroundColor: inputBg,
+                        borderWidth: selected ? 1 : 3,
+                        borderColor: selected ? borderColor : '#6366f1',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Feather name="slash" size={12} color={isDark ? '#9ca3af' : '#6b7280'} />
+                </TouchableOpacity>
+
+                {SUBSCRIPTION_COLORS.map((c) => (
+                    <TouchableOpacity
+                        key={c}
+                        onPress={() => onSelect(c)}
+                        style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 15,
+                            backgroundColor: c,
+                            borderWidth: selected.toLowerCase() === c ? 3 : 0,
+                            borderColor: '#fff',
+                            shadowColor: c,
+                            shadowOpacity: selected.toLowerCase() === c ? 0.55 : 0,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowRadius: 4,
+                            elevation: selected.toLowerCase() === c ? 4 : 0,
+                        }}
+                    />
+                ))}
+            </View>
         </View>
     );
 }

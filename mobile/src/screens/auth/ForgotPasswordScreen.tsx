@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/types';
+import { typography } from '@/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
@@ -52,17 +53,17 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                 className="flex-1 justify-center px-6"
             >
                 <Pressable onPress={() => navigation.goBack()} className="mb-8">
-                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">← Voltar</Text>
+                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]" style={{ fontFamily: typography.fontFamily.medium }}>← Voltar</Text>
                 </Pressable>
 
-                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2">
+                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2" style={{ fontFamily: typography.fontFamily.bold }}>
                     Esqueceu a senha?
                 </Text>
-                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8">
+                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8" style={{ fontFamily: typography.fontFamily.regular }}>
                     Informe seu e-mail e enviaremos um código de 6 dígitos.
                 </Text>
 
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     E-mail
                 </Text>
                 <TextInput
@@ -77,6 +78,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                         setEmail(v);
                         if (emailError) setEmailError('');
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {emailError ? (
                     <Text className="text-xs text-[#ef4444] mt-1 mb-3">{emailError}</Text>
@@ -93,7 +95,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                     disabled={loading}
                     className={`rounded-lg py-3 items-center ${loading ? 'bg-[#1a1f2e]/50 dark:bg-[#e5e7eb]/50' : 'bg-[#1a1f2e] dark:bg-[#e5e7eb]'}`}
                 >
-                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]">
+                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                         {loading ? 'Enviando…' : 'Enviar código'}
                     </Text>
                 </Pressable>

@@ -19,22 +19,23 @@ Após a análise, o app exibe os candidatos identificados para revisão humana. 
 
 ### 2.1 Acesso
 
-- **Tela de Parcelamentos (`InstallmentsScreen`):** botão `Detectar` no header — aciona análise de parcelamentos.
-- **Tela de Assinaturas (`SubscriptionsScreen`):** botão `Detectar` no header — aciona análise de assinaturas.
-- Ambos reutilizam o mesmo hook de análise (`useSmartDetect`), mas filtram o resultado por tipo de padrão.
+- **Tela de Parcelamentos (`InstallmentsScreen`):** botão `Detectar` no header — abre `SmartDetectSheet` com `mode="installment"`.
+- **Tela de Assinaturas (`SubscriptionsScreen`):** botão `Detectar` no header — abre `SmartDetectSheet` com `mode="subscription"`.
+- Ambos reutilizam o mesmo hook (`useSmartDetect`) e o mesmo componente (`SmartDetectSheet`). O `mode` determina quais candidatos são exibidos e como o registro é feito.
 
-> **Decisão de UX:** a detecção unificada roda uma única vez no banco e separa os resultados por tipo. Isso evita processar duas vezes o mesmo dataset.
+> **Decisão de UX (revisada):** a detecção roda uma única vez e retorna todos os candidatos. O componente filtra por `mode`, exibindo apenas os candidatos do tipo relevante para a tela corrente. Não há tabs — cada tela mostra somente seus candidatos. Isso evita o problema anterior em que assinaturas eram exibidas ou classificadas incorretamente como parcelamentos e vice-versa.
 
 ### 2.2 Fluxo Geral
 
 ```
-Usuário pressiona [Detectar]
-    → SmartDetectSheet abre
+Usuário pressiona [Detectar] (em InstallmentsScreen ou SubscriptionsScreen)
+    → SmartDetectSheet abre com mode = 'installment' | 'subscription'
     → Exibe loading ("Analisando suas transações...")
-    → Hook executa algoritmo de detecção no banco via Supabase
-    → Exibe candidatos agrupados por tipo
-    → Para cada candidato: [Criar como Parcelamento] | [Criar como Assinatura] | [Ignorar]
-    → Feedback individual por candidato
+    → Hook executa algoritmo de detecção via Supabase
+    → Lista exibe apenas candidatos do tipo correspondente ao mode
+    → Para cada candidato: [Criar] | [Ignorar]
+    → "Criar" cadastra como Parcelamento (mode=installment) ou Assinatura (mode=subscription)
+    → Feedback individual por candidato (badge "✅ Criado")
     → Ação confirmada salva no banco (installment_groups ou subscriptions)
 ```
 
@@ -45,22 +46,32 @@ Usuário pressiona [Detectar]
 ### 3.1 Pré-processamento de Descrições
 
 ```typescript
+/** Detecta se a descrição bruta contém padrão de numeração de parcela (ex: "1/3", "02/12") */
+function hasInstallmentPattern(rawDesc: string): boolean {
+    return /\b\d{1,2}\s*[\/\-]\s*\d{1,2}\b/.test(rawDesc);
+}
+
 function normalizeDescription(desc: string): string {
     return desc
         .toLowerCase()
-        .replace(/\d+\/\d+/g, '')           // Remove "1/12", "3/6" etc
-        .replace(/\s*\d+\s*x\s*/gi, '')     // Remove "12x", "3x " etc
-        .replace(/[^\w\s]/g, ' ')           // Remove pontuação
-        .replace(/\s+/g, ' ')               // Colapsa espaços
+        .replace(/\b\d{1,2}\s*[\/\-]\s*\d{1,2}\b/g, '') // Remove "1/12", "03/12", "3-12"
+        .replace(/\s*\d+\s*x\s*/gi, '')                  // Remove "12x", "3x "
+        .replace(/parc\.?\s*\d+/gi, '')                  // Remove "Parc 3", "PARC.03"
+        .replace(/parcela\s*\d+/gi, '')                  // Remove "parcela 3"
+        .replace(/[^\w\s]/g, ' ')                        // Remove pontuação
+        .replace(/\s+/g, ' ')                            // Colapsa espaços
         .trim();
 }
 ```
 
+> **Sinal forte de parcelamento:** se pelo menos uma das descrições brutas do grupo contiver o padrão `N/M` (ex: `"Notebook 1/3"`, `"Notebook 2/3"`), o grupo é classificado diretamente como `installment` com alta confiança, independentemente da variação de valor.
+
 ### 3.2 Agrupamento
 
-1. Buscar todas as transações bancárias (`credit_card_id IS NULL`) dos últimos 12 meses.
-2. Agrupar por `normalizeDescription(description)`.
-3. Para cada grupo com **≥ 2 ocorrências**:
+1. Buscar todas as transações bancárias (`credit_card_id IS NULL`) dos últimos 6 meses.
+2. Para cada transação, registrar se a descrição bruta contém padrão N/M (`hasInstallmentPattern`).
+3. Agrupar por `normalizeDescription(description)`.
+4. Para cada grupo com **≥ 2 ocorrências**:
    - Calcular variação de valor: `(max - min) / avg * 100`
    - Calcular intervalos entre datas em dias
    - Classificar como candidato a Parcelamento ou Assinatura
@@ -105,15 +116,22 @@ Um grupo é candidato a **Assinatura** quando:
 
 ### 3.5 Desambiguação
 
-Se um grupo atende critérios de ambos os tipos:
-- Priorizar **Parcelamento** se variação < 2% e duração ≤ 24 meses
-- Priorizar **Assinatura** se variação < 5% e duração indeterminada
+A classificação segue uma ordem de prioridade estrita:
+
+1. **Sinal N/M nas descrições brutas** — se qualquer transação do grupo apresenta padrão `N/M` na descrição original (antes da normalização) → `installment` com `hasInstallmentPattern=true` e confiança `high`, independente dos outros critérios.
+2. **Heurística de variação + duração** (fallback para grupos sem padrão N/M):
+   - Priorizar **Parcelamento** se variação < 2% e count ≤ 24
+   - Priorizar **Assinatura** em qualquer outro caso com recorrência detectada
+
+> **Motivação:** assinaturas como Netflix, Spotify, etc. não contêm padrão N/M e costumam ter variação < 2% com mais de 24 meses de histórico. A heurística anterior classificava essas assinaturas incorretamente como parcelamentos quando count ≤ 24. O sinal N/M resolve a ambiguidade principal.
 
 ---
 
 ## 4. Interface de Revisão (`SmartDetectSheet`)
 
 ### 4.1 Layout
+
+O `SmartDetectSheet` recebe um prop `mode: 'installment' | 'subscription'` e exibe apenas os candidatos classificados com o `suggestedType` correspondente. Não há tabs — cada tela mostra somente seus candidatos.
 
 ```
 ┌──────────────────────────────────────┐
@@ -124,22 +142,22 @@ Se um grupo atende critérios de ambos os tipos:
 │  Analisando transações...            │
 │                                      │
 │  ── Após análise ──                  │
-│  [Tab: Parcelamentos | Assinaturas]  │  ← Tabs para filtrar candidatos
+│  (candidatos filtrados por mode)     │
 │                                      │
 │  ┌──────────────────────────────┐    │
-│  │ 🟣 Notebook Dell             │    │  ← Card de candidato
+│  │ 🟣 Notebook Dell             │    │  ← mode=installment
 │  │ R$ 450,00 × 3 meses         │    │
 │  │ jan/2025 → mar/2025          │    │
 │  │ Confiança: Alta              │    │
-│  │ [Parcelamento] [Assinatura] [Ignorar]│
+│  │ [Criar Parcelamento] [Ignorar]│   │
 │  └──────────────────────────────┘    │
 │                                      │
-│  ┌──────────────────────────────┐    │
+│  ┌──────────────────────────────┐    │  ← mode=subscription
 │  │ 🔵 Netflix                   │    │
 │  │ R$ 55,90 / mês               │    │
 │  │ 6 ocorrências detectadas     │    │
 │  │ Confiança: Alta              │    │
-│  │ [Parcelamento] [Assinatura] [Ignorar]│
+│  │ [Criar Assinatura]  [Ignorar]│    │
 │  └──────────────────────────────┘    │
 └──────────────────────────────────────┘
 ```
@@ -154,24 +172,26 @@ Cada candidato exibe:
 | Descrição | Nome normalizado (capitalizado) |
 | Valor / padrão | `R$ X,XX × N meses` (parcelamento) ou `R$ X,XX / mês` (assinatura) |
 | Período | Datas detectadas (primeiro → último mês) |
-| Confiança | `Alta` (variação < 2%), `Média` (< 5%), `Baixa` (resto) |
-| Ações | 3 botões: Criar como Parcelamento · Criar como Assinatura · Ignorar |
+| Confiança | `Alta` (variação < 2% ou padrão N/M), `Média` (< 5%), `Baixa` (resto) |
+| Ações | 2 botões: **[Criar Parcelamento]** ou **[Criar Assinatura]** (conforme `mode`) · **[Ignorar]** |
+
+> O rótulo do botão "Criar" reflete o contexto da tela: "Criar Parcelamento" quando `mode='installment'`, "Criar Assinatura" quando `mode='subscription'`.
 
 ### 4.3 Ações por Candidato
 
-**Criar como Parcelamento:**
+**Criar** (mode=installment):
 - Abre `InstallmentCreateSheet` pré-preenchido com os dados detectados
 - Usuário revisa e confirma
 - Ao salvar: candidato marcado como `✅ Criado` na lista
 
-**Criar como Assinatura:**
+**Criar** (mode=subscription):
 - Abre `SubscriptionSheet` pré-preenchido com os dados detectados
 - Usuário revisa e confirma
 - Ao salvar: candidato marcado como `✅ Criado` na lista
 
 **Ignorar:**
 - Remove o candidato da lista localmente (não persiste — próxima análise pode re-detectar)
-- Candidate marcado como `❌ Ignorado` com estilo apagado
+- Candidato marcado como `❌ Ignorado` com estilo apagado
 
 ### 4.4 Estado Vazio
 
@@ -196,6 +216,8 @@ interface SmartCandidate {
     interval: 'weekly' | 'monthly' | 'yearly';
     confidence: 'high' | 'medium' | 'low';
     suggestedType: 'installment' | 'subscription';
+    /** Verdadeiro se pelo menos uma descrição bruta do grupo continha padrão N/M */
+    hasInstallmentPattern: boolean;
     rawTransactionIds: number[];
 }
 
@@ -203,17 +225,34 @@ interface UseSmartDetectReturn {
     loading: boolean;
     error: string | null;
     candidates: SmartCandidate[];
-    analyze: () => void;
+    analyze: () => Promise<void>;
     dismiss: (id: string) => void;
+    markCreated: (id: string) => void;
+    created: Set<string>;
+    dismissed: Set<string>;
+}
+
+// Props do SmartDetectSheet
+interface SmartDetectSheetProps {
+    visible: boolean;
+    onClose: () => void;
+    /** Determina quais candidatos são exibidos e como o registro é feito */
+    mode: 'installment' | 'subscription';
 }
 ```
 
 **`analyze()`:**
-1. Busca transações: `credit_card_id IS NULL`, últimos 12 meses
-2. Executa o algoritmo de agrupamento e classificação em memória
-3. Atualiza `candidates` com os resultados
+1. Busca transações: `credit_card_id IS NULL`, últimos 6 meses
+2. Para cada transação, registra se a descrição bruta tem padrão N/M (`hasInstallmentPattern`)
+3. Agrupa por descrição normalizada e classifica candidatos em memória
+4. Candidatos com padrão N/M → `suggestedType = 'installment'` e `hasInstallmentPattern = true` (sinal forte)
+5. Atualiza `candidates` com todos os resultados (installments + subscriptions)
 
-> ℹ️ O processamento ocorre **no cliente** (em memória). Não há stored procedures nem Edge Functions. O volume de transações de 12 meses é manejável em memória em todos os dispositivos móveis modernos.
+**`SmartDetectSheet` (componente):**
+- Filtra `candidates` por `candidate.suggestedType === mode` para exibir apenas os relevantes
+- Botão "Criar" rotulado conforme `mode`: "Criar Parcelamento" ou "Criar Assinatura"
+
+> ℹ️ O processamento ocorre **no cliente** (em memória). Não há stored procedures nem Edge Functions.
 
 ---
 
@@ -229,7 +268,10 @@ interface UseSmartDetectReturn {
 | RN-06 | Ao criar como Assinatura, o formulário é pré-preenchido mas o usuário pode editar todos os campos antes de confirmar. | 🟢 |
 | RN-07 | Um candidato que já foi vinculado a um Parcelamento ou Assinatura existente deve ser filtrado (verificar se `description` já existe em `installment_groups` ou `subscriptions`). | 🟢 |
 | RN-08 | A detecção não exclui nem modifica transações existentes em nenhum momento. | 🟢 |
-| RN-09 | Confiança `Alta` = variação < 2%; `Média` = < 5%; `Baixa` = ≥ 5%. | 🟢 |
+| RN-09 | Confiança `Alta` = variação < 2% ou `hasInstallmentPattern=true`; `Média` = variação < 5%; `Baixa` = ≥ 5%. | 🟢 |
+| RN-10 | `SmartDetectSheet` com `mode='installment'` exibe apenas candidatos com `suggestedType='installment'` e o botão "Criar" registra um Parcelamento (`installment_groups`). | 🟢 |
+| RN-11 | `SmartDetectSheet` com `mode='subscription'` exibe apenas candidatos com `suggestedType='subscription'` e o botão "Criar" registra uma Assinatura (`subscriptions`). | 🟢 |
+| RN-12 | Descrições brutas contendo padrão `N/M` (ex: `"Compra 1/3"`, `"Parcela 02/12"`) são classificadas como `installment` com `hasInstallmentPattern=true` e confiança `high`, independentemente de variação de valor ou count. | 🟢 |
 
 ---
 
@@ -239,22 +281,38 @@ interface UseSmartDetectReturn {
 
 ```
 Dado:  6 transações "Netflix" em meses consecutivos, valor ~R$55,90 (variação < 2%)
-Quando: usuário aciona "Detectar" na tela de Assinaturas
-Então: candidato "Netflix" aparece
+       Descrições brutas NÃO contêm padrão N/M
+Quando: usuário aciona "Detectar" na tela de Assinaturas (mode=subscription)
+Então: candidato "Netflix" aparece na lista
        amount ≈ 55,90
        interval = monthly
        confidence = Alta
+       suggestedType = subscription
+       hasInstallmentPattern = false
 ```
 
-### CA-02 — Detecção de parcelamento
+### CA-02 — Detecção de parcelamento por padrão N/M
 
 ```
-Dado:  3 transações "Notebook 1/12", "Notebook 2/12", "Notebook 3/12"
-       ou 3 transações "Compra Notebook" com valores idênticos em 3 meses consecutivos
-Quando: usuário aciona "Detectar" na tela de Parcelamentos
-Então: candidato "Notebook" aparece
+Dado:  3 transações "Notebook 1/3", "Notebook 2/3", "Notebook 3/3"
+Quando: usuário aciona "Detectar" na tela de Parcelamentos (mode=installment)
+Então: candidato "Notebook" aparece na lista
        count = 3
        suggestedType = installment
+       hasInstallmentPattern = true
+       confidence = Alta (sinal forte N/M)
+```
+
+### CA-02b — Assinatura não confundida com parcelamento
+
+```
+Dado:  24 transações "Netflix" em meses consecutivos, variação < 2%
+       Descrições brutas NÃO contêm padrão N/M
+Quando: usuário aciona "Detectar" na tela de Parcelamentos (mode=installment)
+Então: candidato "Netflix" NÃO aparece (suggestedType=subscription, filtrado pelo mode)
+
+Quando: usuário aciona "Detectar" na tela de Assinaturas (mode=subscription)
+Então: candidato "Netflix" aparece corretamente como assinatura
 ```
 
 ### CA-03 — Criar assinatura a partir de candidato

@@ -695,6 +695,7 @@ export function InstallmentsScreen() {
             <SmartDetectSheet
                 visible={detectSheetOpen}
                 onClose={() => setDetectSheetOpen(false)}
+                mode="installment"
                 onPrefillInstallment={(c, onSuccess) => openSheet(null, c, onSuccess)}
             />
         </View>

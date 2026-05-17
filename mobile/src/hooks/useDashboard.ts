@@ -191,7 +191,7 @@ export function useDashboard(): DashboardData {
 
     // --- Subscription totals ---
     const subscriptionTotals: SubscriptionTotals = subscriptions
-        .filter((s) => s.active === 1)
+        .filter((s) => s.active)
         .reduce(
             (acc, s) => ({
                 monthlyTotal: acc.monthlyTotal + monthlyEquivalent(s.amount, s.period),
@@ -203,7 +203,7 @@ export function useDashboard(): DashboardData {
     return {
         monthlyData,
         categorySlices,
-        subscriptions: subscriptions.filter((s) => s.active === 1),
+        subscriptions: subscriptions.filter((s) => s.active),
         subscriptionTotals,
         loading,
         error,

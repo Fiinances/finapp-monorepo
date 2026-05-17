@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     ActivityIndicator,
     Animated,
@@ -17,6 +17,7 @@ import { useSmartDetect, SmartCandidate } from '@/hooks/useSmartDetect';
 interface SmartDetectSheetProps {
     visible: boolean;
     onClose: () => void;
+    mode: 'installment' | 'subscription';
     onPrefillInstallment?: (candidate: SmartCandidate, onSuccess: () => void) => void;
     onPrefillSubscription?: (candidate: SmartCandidate, onSuccess: () => void) => void;
 }
@@ -28,6 +29,7 @@ function formatBRL(value: number): string {
 export function SmartDetectSheet({
     visible,
     onClose,
+    mode,
     onPrefillInstallment,
     onPrefillSubscription,
 }: SmartDetectSheetProps) {
@@ -43,8 +45,6 @@ export function SmartDetectSheet({
 
     const { loading, error, candidates, analyze, dismiss, markCreated, created, dismissed } =
         useSmartDetect();
-
-    const [tab, setTab] = useState<'installment' | 'subscription'>('installment');
 
     useEffect(() => {
         if (visible) {
@@ -74,19 +74,19 @@ export function SmartDetectSheet({
         })
     ).current;
 
-    // Filtered candidates
-    const filtered = candidates.filter(
-        (c) => c.suggestedType === tab && !dismissed.has(c.id)
-    );
+    // Lista única de recorrências, sem tabs.
+    const filtered = candidates.filter((c) => !dismissed.has(c.id));
 
-    const handleCreateInstallment = (c: SmartCandidate) => {
-        if (onPrefillInstallment) {
+    const canCreate = mode === 'installment' ? !!onPrefillInstallment : !!onPrefillSubscription;
+    const createLabel = mode === 'installment' ? 'Criar parcelamento' : 'Criar assinatura';
+
+    const handleCreate = (c: SmartCandidate) => {
+        if (mode === 'installment' && onPrefillInstallment) {
             onPrefillInstallment(c, () => markCreated(c.id));
+            return;
         }
-    };
 
-    const handleCreateSubscription = (c: SmartCandidate) => {
-        if (onPrefillSubscription) {
+        if (mode === 'subscription' && onPrefillSubscription) {
             onPrefillSubscription(c, () => markCreated(c.id));
         }
     };
@@ -118,9 +118,9 @@ export function SmartDetectSheet({
                             {c.displayName}
                         </Text>
                         <Text style={{ color: labelColor, fontSize: 13, marginBottom: 2 }}>
-                            {tab === 'installment'
-                                ? `${formatBRL(c.amount)} × ${c.count} meses`
-                                : `${formatBRL(c.amount)} / ${c.interval === 'weekly' ? 'semana' : c.interval === 'monthly' ? 'mês' : 'ano'}`}
+                            {`${formatBRL(c.amount)} • ${c.count} ocorrência${c.count > 1 ? 's' : ''} • ${
+                                c.interval === 'weekly' ? 'semanal' : c.interval === 'monthly' ? 'mensal' : 'anual'
+                            }`}
                         </Text>
                         <Text style={{ color: labelColor, fontSize: 12 }}>
                             {c.firstMonth} → {c.lastMonth}
@@ -154,9 +154,9 @@ export function SmartDetectSheet({
                     </View>
                 ) : (
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-                        {tab === 'installment' && onPrefillInstallment && (
+                        {canCreate && (
                             <TouchableOpacity
-                                onPress={() => handleCreateInstallment(c)}
+                                onPress={() => handleCreate(c)}
                                 style={{
                                     flex: 1,
                                     backgroundColor: '#6366f1',
@@ -165,21 +165,7 @@ export function SmartDetectSheet({
                                     alignItems: 'center',
                                 }}
                             >
-                                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Criar</Text>
-                            </TouchableOpacity>
-                        )}
-                        {tab === 'subscription' && onPrefillSubscription && (
-                            <TouchableOpacity
-                                onPress={() => handleCreateSubscription(c)}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: '#6366f1',
-                                    borderRadius: 8,
-                                    paddingVertical: 8,
-                                    alignItems: 'center',
-                                }}
-                            >
-                                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Criar</Text>
+                                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>{createLabel}</Text>
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
@@ -220,43 +206,12 @@ export function SmartDetectSheet({
                     <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text style={{ color: textColor, fontSize: 18, fontWeight: '700' }}>
-                                Detectar Padrões
+                                Detectar Recorrências
                             </Text>
                             <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                 <Feather name="x" size={22} color={labelColor} />
                             </TouchableOpacity>
                         </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12 }}>
-                        <TouchableOpacity
-                            onPress={() => setTab('installment')}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 10,
-                                borderBottomWidth: 2,
-                                borderBottomColor: tab === 'installment' ? '#6366f1' : 'transparent',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Text style={{ color: tab === 'installment' ? '#6366f1' : labelColor, fontWeight: '600' }}>
-                                Parcelamentos
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setTab('subscription')}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 10,
-                                borderBottomWidth: 2,
-                                borderBottomColor: tab === 'subscription' ? '#6366f1' : 'transparent',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Text style={{ color: tab === 'subscription' ? '#6366f1' : labelColor, fontWeight: '600' }}>
-                                Assinaturas
-                            </Text>
-                        </TouchableOpacity>
                     </View>
 
                     <ScrollView
@@ -277,7 +232,7 @@ export function SmartDetectSheet({
                             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                                 <Feather name="search" size={32} color={borderColor} />
                                 <Text style={{ color: textColor, fontSize: 16, fontWeight: '600', marginTop: 12 }}>
-                                    Nenhum padrão encontrado
+                                    Nenhuma recorrência encontrada
                                 </Text>
                                 <Text style={{ color: labelColor, textAlign: 'center', marginTop: 8 }}>
                                     Importe mais transações para que o algoritmo possa identificar recorrências.

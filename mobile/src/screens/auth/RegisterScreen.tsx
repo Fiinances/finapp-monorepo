@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthStackParamList } from '@/navigation/types';
+import { typography } from '@/theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
@@ -117,18 +118,18 @@ export function RegisterScreen({ navigation }: Props) {
                 className="flex-1 justify-center px-6"
             >
                 <Pressable onPress={() => navigation.goBack()} className="mb-6">
-                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]">← Voltar</Text>
+                    <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af]" style={{ fontFamily: typography.fontFamily.medium }}>← Voltar</Text>
                 </Pressable>
 
-                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2">
+                <Text className="text-2xl font-bold text-[#1a1f2e] dark:text-[#f8f9fc] mb-2" style={{ fontFamily: typography.fontFamily.bold }}>
                     Criar conta
                 </Text>
-                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8">
+                <Text className="text-sm text-[#6b7280] dark:text-[#9ca3af] mb-8" style={{ fontFamily: typography.fontFamily.regular }}>
                     Comece a organizar suas finanças
                 </Text>
 
                 {/* E-mail */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     E-mail
                 </Text>
                 <TextInput
@@ -146,6 +147,7 @@ export function RegisterScreen({ navigation }: Props) {
                         setEmail(v);
                         if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {fieldErrors.email ? (
                     <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.email}</Text>
@@ -154,7 +156,7 @@ export function RegisterScreen({ navigation }: Props) {
                 )}
 
                 {/* Senha */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Senha
                 </Text>
                 <TextInput
@@ -170,6 +172,7 @@ export function RegisterScreen({ navigation }: Props) {
                         setPassword(v);
                         if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {/* Barra de força de senha */}
                 {password.length > 0 && (
@@ -201,7 +204,7 @@ export function RegisterScreen({ navigation }: Props) {
                 )}
 
                 {/* Confirmar senha */}
-                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide">
+                <Text className="text-xs font-medium text-[#6b7280] dark:text-[#9ca3af] mb-1 uppercase tracking-wide" style={{ fontFamily: typography.fontFamily.medium }}>
                     Confirmar senha
                 </Text>
                 <TextInput
@@ -217,6 +220,7 @@ export function RegisterScreen({ navigation }: Props) {
                         setConfirm(v);
                         if (fieldErrors.confirm) setFieldErrors(prev => ({ ...prev, confirm: '' }));
                     }}
+                    style={{ fontFamily: typography.fontFamily.regular }}
                 />
                 {fieldErrors.confirm ? (
                     <Text className="text-xs text-[#ef4444] mt-1 mb-3">{fieldErrors.confirm}</Text>
@@ -234,7 +238,7 @@ export function RegisterScreen({ navigation }: Props) {
                     disabled={loading}
                     className={`rounded-lg py-3 items-center ${loading ? 'bg-[#1a1f2e]/50 dark:bg-[#e5e7eb]/50' : 'bg-[#1a1f2e] dark:bg-[#e5e7eb]'}`}
                 >
-                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]">
+                    <Text className="text-sm font-semibold text-white dark:text-[#0f1117]" style={{ fontFamily: typography.fontFamily.semiBold }}>
                         {loading ? 'Cadastrando…' : 'Criar conta'}
                     </Text>
                 </Pressable>

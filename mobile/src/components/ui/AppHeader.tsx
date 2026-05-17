@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { typography } from '@/theme';
 
 interface AppHeaderProps {
     title: string;
@@ -42,11 +43,11 @@ export function AppHeader({
                 <Feather name={leftIcon} size={22} color={textColor} />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: textColor }}>
+                <Text style={{ fontSize: 18, color: textColor, fontFamily: typography.fontFamily.bold }}>
                     {title}
                 </Text>
                 {subtitle ? (
-                    <Text style={{ fontSize: 12, color: subColor, marginTop: 1 }}>
+                    <Text style={{ fontSize: 12, color: subColor, marginTop: 1, fontFamily: typography.fontFamily.regular }}>
                         {subtitle}
                     </Text>
                 ) : null}

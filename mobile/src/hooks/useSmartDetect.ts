@@ -22,10 +22,12 @@ export interface SmartCandidate {
     lastMonth: string;  // MM/YYYY
     /** Intervalo de recorrência detectado */
     interval: CandidateInterval;
-    /** Nível de confiança baseado na variação de valor */
+    /** Nível de confiança baseado na variação de valor ou padrão N/M */
     confidence: CandidateConfidence;
     /** Tipo sugerido pelo algoritmo */
     suggestedType: CandidateSuggestedType;
+    /** True se alguma descrição bruta do grupo contém padrão N/M (ex: "1/3", "02/12") */
+    hasInstallmentPattern: boolean;
     /** IDs das transações de origem para rastreabilidade */
     rawTransactionIds: number[];
 }
@@ -45,6 +47,11 @@ export interface UseSmartDetectReturn {
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
+
+/** Detecta padrão N/M na descrição bruta (ex: "1/3", "02/12", "3-12") */
+function hasInstallmentPattern(rawDesc: string): boolean {
+    return /\b\d{1,2}\s*[/\-]\s*\d{1,2}\b/.test(rawDesc);
+}
 
 /** Normaliza descrição: remove parcelamento, pontuação e espaços extras */
 function normalizeDescription(desc: string): string {
@@ -110,22 +117,25 @@ function isoToMonthKey(iso: string): string {
     return `${m[2]}/${m[1]}`;
 }
 
-/** Converte variação percentual em nível de confiança */
-function calcConfidence(variancePct: number): CandidateConfidence {
-    if (variancePct < 2) return 'high';
+/** Converte variação percentual em nível de confiança (N/M sempre → high) */
+function calcConfidence(variancePct: number, hasNMPattern: boolean): CandidateConfidence {
+    if (hasNMPattern || variancePct < 2) return 'high';
     if (variancePct < 5) return 'medium';
     return 'low';
 }
 
 /**
  * Desambigua entre parcelamento e assinatura:
- * - Parcelamento: variação < 2% E duração ≤ 24 meses
- * - Assinatura: qualquer outro caso com recorrência detectada
+ * - Prioridade 1 (sinal forte): padrão N/M na descrição bruta → installment
+ * - Prioridade 2 (heurística): variação < 2% E count ≤ 24 → installment
+ * - Demais → subscription
  */
 function suggestType(
+    hasNMPattern: boolean,
     variancePct: number,
     count: number,
 ): CandidateSuggestedType {
+    if (hasNMPattern) return 'installment';
     if (variancePct < 2 && count <= 24) return 'installment';
     return 'subscription';
 }
@@ -139,10 +149,10 @@ function makeId(normalizedDesc: string): string {
     return `sd_${Math.abs(hash).toString(16)}`;
 }
 
-/** Retorna data ISO de 12 meses atrás */
-function twelveMonthsAgo(): string {
+/** Retorna data ISO de 6 meses atrás */
+function sixMonthsAgo(): string {
     const d = new Date();
-    d.setMonth(d.getMonth() - 12);
+    d.setMonth(d.getMonth() - 6);
     return d.toISOString().slice(0, 10);
 }
 
@@ -162,8 +172,8 @@ export function useSmartDetect(): UseSmartDetectReturn {
         setCreated(new Set());
 
         try {
-            // ── 1. Buscar transações bancárias dos últimos 12 meses ────────
-            const from = twelveMonthsAgo();
+            // ── 1. Buscar transações bancárias dos últimos 6 meses ────────
+            const from = sixMonthsAgo();
             const { data: txData, error: txErr } = await supabase
                 .from('transactions')
                 .select('id, description, amount, date, type')
@@ -200,6 +210,7 @@ export function useSmartDetect(): UseSmartDetectReturn {
                     amounts: number[];
                     dates: Date[];
                     rawDesc: string;
+                    hasNMPattern: boolean;
                 }
             >();
 
@@ -209,12 +220,15 @@ export function useSmartDetect(): UseSmartDetectReturn {
                 if (!norm || norm.length < 3) continue;
 
                 if (!groups.has(norm)) {
-                    groups.set(norm, { ids: [], amounts: [], dates: [], rawDesc: tx.description });
+                    groups.set(norm, { ids: [], amounts: [], dates: [], rawDesc: tx.description, hasNMPattern: false });
                 }
                 const g = groups.get(norm)!;
                 g.ids.push(tx.id!);
                 g.amounts.push(tx.amount);
                 g.dates.push(new Date(tx.date));
+                if (hasInstallmentPattern(tx.description)) {
+                    g.hasNMPattern = true;
+                }
             }
 
             // ── 4. Filtrar e classificar candidatos ───────────────────────
@@ -232,11 +246,11 @@ export function useSmartDetect(): UseSmartDetectReturn {
 
                 const variancePct = variancePercent(group.amounts);
 
-                // Variação máxima para ser candidato: < 5%
-                if (variancePct >= 5) continue;
+                // Variação máxima para ser candidato: < 5% (a menos que seja N/M)
+                if (!group.hasNMPattern && variancePct >= 5) continue;
 
-                const confidence = calcConfidence(variancePct);
-                const suggestedType = suggestType(variancePct, group.ids.length);
+                const confidence = calcConfidence(variancePct, group.hasNMPattern);
+                const suggestedType = suggestType(group.hasNMPattern, variancePct, group.ids.length);
                 const sortedDates = [...group.dates].sort((a, b) => a.getTime() - b.getTime());
 
                 result.push({
@@ -250,6 +264,7 @@ export function useSmartDetect(): UseSmartDetectReturn {
                     interval,
                     confidence,
                     suggestedType,
+                    hasInstallmentPattern: group.hasNMPattern,
                     rawTransactionIds: group.ids,
                 });
             }

@@ -72,11 +72,11 @@ export interface Subscription {
     amount: number;
     period: SubscriptionPeriod;
     type: 'income' | 'expense';
-    active: 0 | 1;
+    active: boolean;
     next_due?: string | null;
     category?: string | null;
     color?: string | null;
-    bank_account_id?: number | null;
+    account_id?: number | null;
     credit_card_id?: number | null;
     created_at?: string;
     updated_at?: string;

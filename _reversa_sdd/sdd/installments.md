@@ -51,7 +51,7 @@
 "Parcelamentos" (h1)
 "Compras parceladas no cartão de crédito" (subtítulo)
 Botões:
-  [Detectar] → abre DetectInstallmentsSheet
+  [Detectar] → abre SmartDetectSheet com mode="installment"
   [Novo parcelamento] → abre Sheet de criação
 ```
 

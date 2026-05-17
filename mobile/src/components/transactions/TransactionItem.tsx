@@ -52,7 +52,7 @@ export function TransactionItem({ transaction, onPress }: Props) {
             <Card
                 size="md"
                 variant="elevated"
-                className='m-3'
+                className='mx-3 my-2'
                 style={{
                     flexDirection: 'row',
                     alignItems: 'center',
