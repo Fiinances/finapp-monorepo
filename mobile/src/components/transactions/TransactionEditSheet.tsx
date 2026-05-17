@@ -29,6 +29,7 @@ export interface TransactionPatch {
     amount: number;
     type: TransactionType;
     date: string;       // YYYY-MM-DD
+    is_essential: boolean;
     category_id: number | null;
 }
 
@@ -108,6 +109,7 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
     const [description, setDesc] = useState('');
     const [amountStr, setAmountStr] = useState('');
     const [dateStr, setDateStr] = useState('');
+    const [isEssential, setIsEssential] = useState(false);
     const [categoryId, setCategoryId] = useState<number | null>(null);
     const [errors, setErrors] = useState<Partial<Record<'description' | 'amount' | 'date', string>>>({});
 
@@ -155,6 +157,7 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
             setDesc(transaction.description);
             setAmountStr(toInputAmount(transaction.amount));
             setDateStr(isoToBR(transaction.date));
+            setIsEssential(Boolean(transaction.is_essential));
             setCategoryId(transaction.category_id ?? null);
             setErrors({});
         }
@@ -203,6 +206,7 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
             amount: parsedAmount!,
             type,
             date: isoDate!,
+            is_essential: isEssential,
             category_id: categoryId,
         });
     }
@@ -436,6 +440,7 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
                             </View>
                         </View>
 
+
                         {/* ── Categoria ── */}
                         <Text style={[styles.sectionLabel(labelColor), { marginTop: 20 }]}>Categoria</Text>
                         <View style={{ marginBottom: 24 }}>
@@ -542,6 +547,70 @@ export function TransactionEditSheet({ visible, transaction, categories, saving 
                                     )}
                                 </View>
                             )}
+                        </View>
+
+
+                        {/* ── Gasto essencial ── */}
+                        <View
+                            style={{
+                                backgroundColor: bgInput,
+                                borderRadius: 14,
+                                borderWidth: 1,
+                                borderColor: borderColor,
+                                paddingHorizontal: 14,
+                                paddingVertical: 12,
+                                marginBottom: 20,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1, paddingRight: 10 }}>
+                                <View
+                                    style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: isDark ? '#1e2540' : '#e0e7ff',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginTop: 1,
+                                    }}
+                                >
+                                    <Feather name="star" size={12} color="#6366f1" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: textColor, fontSize: 14, fontWeight: '700', marginBottom: 2 }}>
+                                        Gasto Essencial
+                                    </Text>
+                                    <Text style={{ color: labelColor, fontSize: 12 }}>
+                                        Marcar para priorizar no orçamento fixo
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={() => setIsEssential((prev) => !prev)}
+                                activeOpacity={0.85}
+                                style={{
+                                    width: 44,
+                                    height: 24,
+                                    borderRadius: 12,
+                                    backgroundColor: isEssential ? '#6366f1' : (isDark ? '#374151' : '#d1d5db'),
+                                    justifyContent: 'center',
+                                    paddingHorizontal: 2,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: '#ffffff',
+                                        alignSelf: isEssential ? 'flex-end' : 'flex-start',
+                                    }}
+                                />
+                            </TouchableOpacity>
                         </View>
                     </ScrollView>
 

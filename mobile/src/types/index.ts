@@ -24,6 +24,7 @@ export interface Transaction {
     type: TransactionType;
     date: string;          // ISO YYYY-MM-DD
     billing_month?: string | null; // MM/YYYY
+    is_essential?: boolean;
     category_id?: number | null;
     category?: Category | null;
     account_id?: number | null;

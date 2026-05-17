@@ -74,6 +74,7 @@ export function useTransactions(filters?: TransactionFilters): UseTransactionsRe
                 type: patch.type,
                 date: patch.date,
                 category_id: patch.category_id,
+                is_essential: patch.is_essential,
             })
             .eq('id', id);
 
@@ -111,6 +112,7 @@ export function useTransactions(filters?: TransactionFilters): UseTransactionsRe
                 account_id: data.account_id,
                 credit_card_id: data.credit_card_id,
                 billing_month: data.credit_card_id ? billingMonth : null,
+                is_essential: data.is_essential,
             });
 
         if (sbError) throw new Error(sbError.message);

@@ -30,6 +30,7 @@ export interface TransactionCreate {
     amount: number;
     type: TransactionType;
     date: string;           // YYYY-MM-DD
+    is_essential: boolean;
     category_id: number | null;
     account_id: number | null;
     credit_card_id: number | null;
@@ -116,6 +117,7 @@ export function TransactionCreateSheet({
     const [amountStr, setAmountStr] = useState('');
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isEssential, setIsEssential] = useState(false);
     const [categoryId, setCategoryId] = useState<number | null>(null);
     const [linkType, setLinkType] = useState<LinkType>('account');
     const [accountId, setAccountId] = useState<number | null>(null);
@@ -168,6 +170,7 @@ export function TransactionCreateSheet({
             setAmountStr('');
             setSelectedDate(new Date());
             setShowDatePicker(false);
+            setIsEssential(false);
             setCategoryId(null);
             setLinkType('account');
             setAccountId(null);
@@ -243,6 +246,7 @@ export function TransactionCreateSheet({
             amount: parsedAmount!,
             type,
             date: dateToISO(selectedDate),
+            is_essential: isEssential,
             category_id: categoryId,
             account_id: linkType === 'account' ? accountId : null,
             credit_card_id: linkType === 'card' ? creditCardId : null,
@@ -578,6 +582,70 @@ export function TransactionCreateSheet({
                                     )}
                                 </View>
                             )}
+                        </View>
+
+
+                        {/* ── Gasto essencial ── */}
+                        <View
+                            style={{
+                                backgroundColor: bgInput,
+                                borderRadius: 14,
+                                borderWidth: 1,
+                                borderColor: borderColor,
+                                paddingHorizontal: 14,
+                                paddingVertical: 12,
+                                marginBottom: 20,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1, paddingRight: 10 }}>
+                                <View
+                                    style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: isDark ? '#1e2540' : '#e0e7ff',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginTop: 1,
+                                    }}
+                                >
+                                    <Feather name="star" size={12} color="#6366f1" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: textColor, fontSize: 14, fontWeight: '700', marginBottom: 2 }}>
+                                        Gasto Essencial
+                                    </Text>
+                                    <Text style={{ color: labelColor, fontSize: 12 }}>
+                                        Marcar para priorizar no orçamento fixo
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={() => setIsEssential((prev) => !prev)}
+                                activeOpacity={0.85}
+                                style={{
+                                    width: 44,
+                                    height: 24,
+                                    borderRadius: 12,
+                                    backgroundColor: isEssential ? '#6366f1' : (isDark ? '#374151' : '#d1d5db'),
+                                    justifyContent: 'center',
+                                    paddingHorizontal: 2,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        backgroundColor: '#ffffff',
+                                        alignSelf: isEssential ? 'flex-end' : 'flex-start',
+                                    }}
+                                />
+                            </TouchableOpacity>
                         </View>
 
                         {/* ── Vínculo (conta / cartão) ── */}
