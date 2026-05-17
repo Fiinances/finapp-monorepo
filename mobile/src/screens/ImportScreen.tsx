@@ -233,7 +233,7 @@ export function ImportScreen() {
                                 const hashKey = `${t.external_id}|${t.date}|${destPart}`;
                                 return [
                                     hashKey,
-                                    { 
+                                    {
                                         category_id: t.category_id as number | null,
                                         account_id: t.account_id as number | null,
                                         credit_card_id: t.credit_card_id as number | null,
@@ -374,11 +374,11 @@ export function ImportScreen() {
                 const destPart = isCard ? `c:${cardId}` : `a:${acctId}`;
                 const hashKey = `${r.external_id}|${r.date}|${destPart}`;
                 const existing = r.external_id ? existingTxMap.get(hashKey) : undefined;
-                
+
                 if (existing) {
                     updateCount++;
                     if (
-                        (isCard && existing.account_id != null) || 
+                        (isCard && existing.account_id != null) ||
                         (!isCard && existing.credit_card_id != null) ||
                         (isCard && existing.credit_card_id != null && existing.credit_card_id !== cardId) ||
                         (!isCard && existing.account_id != null && existing.account_id !== acctId)
@@ -866,7 +866,7 @@ function PreviewStep({
             <FlatList
                 data={rows}
                 keyExtractor={item => item._key}
-                contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
+                contentContainerStyle={{ padding: 12, paddingBottom: 140 }}
                 ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item }) => (
                     <PreviewRow

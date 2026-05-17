@@ -41,6 +41,14 @@ export interface DashboardData {
     selectedMonth: string;
     setSelectedMonth: (m: string) => void;
     refetch: () => void;
+    // New fields for the dashboard layout
+    saldo: number;
+    saldoPercent: number | null;
+    entradas: number;
+    essentialTotal: number;
+    nonEssentialTotal: number;
+    investimentos: number;
+    recentTransactions: Transaction[];
 }
 
 // Deterministic category colors fallback palette
@@ -63,6 +71,15 @@ function parseYearMonth(date: string): string {
 function monthYearToSortKey(my: string): number {
     const [m, y] = my.split('/');
     return parseInt(y, 10) * 100 + parseInt(m, 10);
+}
+
+function shiftMonth(my: string, delta: number): string {
+    const [mStr, yStr] = my.split('/');
+    let m = parseInt(mStr, 10) + delta;
+    let y = parseInt(yStr, 10);
+    while (m > 12) { m -= 12; y += 1; }
+    while (m < 1) { m += 12; y -= 1; }
+    return `${String(m).padStart(2, '0')}/${y}`;
 }
 
 function last12MonthKeys(): string[] {
@@ -200,6 +217,47 @@ export function useDashboard(): DashboardData {
             { monthlyTotal: 0, yearlyTotal: 0 },
         );
 
+    // --- New dashboard computed values ---
+    const txForMonth = (monthYear: string) =>
+        transactions.filter(
+            (t) =>
+                parseYearMonth(t.credit_card_id && t.billing_month ? t.billing_month : t.date) === monthYear,
+        );
+
+    const currentMonthTx = txForMonth(selectedMonth);
+    const entradas = currentMonthTx.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    // Modelo de caixa: apenas despesas bancárias diretas (sem cartão) + pagamentos de fatura
+    const bankExpenses = currentMonthTx.filter((t) => t.type === 'expense' && !t.credit_card_id).reduce((s, t) => s + t.amount, 0);
+    const cardPayments = currentMonthTx.filter((t) => t.type === 'card_payment').reduce((s, t) => s + t.amount, 0);
+    const totalExpense = bankExpenses + cardPayments;
+    const totalInvestment = currentMonthTx.filter((t) => t.type === 'investment').reduce((s, t) => s + t.amount, 0);
+    const saldo = entradas - totalExpense - totalInvestment;
+
+    const essentialTotal = currentMonthTx
+        .filter((t) => t.type === 'expense' && !t.credit_card_id && t.is_essential)
+        .reduce((s, t) => s + t.amount, 0);
+    const nonEssentialTotal = currentMonthTx
+        .filter((t) => t.type === 'expense' && !t.credit_card_id && !t.is_essential)
+        .reduce((s, t) => s + t.amount, 0) + cardPayments;
+
+    const prevKey = shiftMonth(selectedMonth, -1);
+    const prevMonthTx = txForMonth(prevKey);
+    const prevEntradas = prevMonthTx.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const prevBankExpenses = prevMonthTx.filter((t) => t.type === 'expense' && !t.credit_card_id).reduce((s, t) => s + t.amount, 0);
+    const prevCardPayments = prevMonthTx.filter((t) => t.type === 'card_payment').reduce((s, t) => s + t.amount, 0);
+    const prevExpense = prevBankExpenses + prevCardPayments;
+    const prevInvestment = prevMonthTx.filter((t) => t.type === 'investment').reduce((s, t) => s + t.amount, 0);
+    const prevSaldo = prevEntradas - prevExpense - prevInvestment;
+    const saldoPercent = prevSaldo === 0 ? null : ((saldo - prevSaldo) / Math.abs(prevSaldo)) * 100;
+
+    const recentTransactions = [...transactions
+        .filter((t) => {
+            if (t.type === 'transfer' || t.type === 'card_payment') return false;
+            return parseYearMonth(t.credit_card_id && t.billing_month ? t.billing_month : t.date) === selectedMonth;
+        })]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5);
+
     return {
         monthlyData,
         categorySlices,
@@ -210,5 +268,12 @@ export function useDashboard(): DashboardData {
         selectedMonth,
         setSelectedMonth,
         refetch: fetchAll,
+        saldo,
+        saldoPercent,
+        entradas,
+        essentialTotal,
+        nonEssentialTotal,
+        investimentos: totalInvestment,
+        recentTransactions,
     };
 }

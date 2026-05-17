@@ -21,6 +21,25 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { supabase } from '@/lib/supabase';
 import { Transaction } from '@/types';
 
+function shiftMonth(my: string, delta: number): string {
+    const [mStr, yStr] = my.split('/');
+    let m = parseInt(mStr, 10) + delta;
+    let y = parseInt(yStr, 10);
+    while (m > 12) { m -= 12; y += 1; }
+    while (m < 1) { m += 12; y -= 1; }
+    return `${String(m).padStart(2, '0')}/${y}`;
+}
+
+function getMonthLabel(my: string): string {
+    if (!my) return '';
+    const [mStr, yStr] = my.split('/');
+    const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+    ];
+    return `${months[parseInt(mStr, 10) - 1]} ${yStr}`;
+}
+
 function monthLabelShort(my: string): string {
     if (!my) return '';
     const [mStr, yStr] = my.split('/');
@@ -33,6 +52,9 @@ export function TransactionsScreen() {
     const { openMenu } = useSideMenu();
 
     const bg = isDark ? '#0f1117' : '#f5f6f8';
+    const bgCard = isDark ? '#1a1f2e' : '#ffffff';
+    const textColor = isDark ? '#e5e7eb' : '#1a1f2e';
+    const borderColor = isDark ? '#2d3550' : '#e5e7eb';
 
     const { filters, setMonth, toggleType, toggleCategory, setImportSource, activeCount } =
         useTransactionFilters();
@@ -48,6 +70,11 @@ export function TransactionsScreen() {
     const { accounts, creditCards } = useBanks();
     const { categories, createCategory } = useCategories();
     const { user } = useAuth();
+
+    const now = new Date();
+    const maxMonth = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+    const currentMonth = filters.month ?? maxMonth;
+    const isAtMax = currentMonth >= maxMonth;
 
     const transactions = useMemo(() => {
         return allTransactions.filter((t) => {
@@ -145,6 +172,47 @@ export function TransactionsScreen() {
                     </View>
                 }
             />
+
+            {/* Month Selector */}
+            <View style={{
+                backgroundColor: bgCard,
+                marginHorizontal: 16,
+                marginTop: 12,
+                marginBottom: 4,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+            }}>
+                <TouchableOpacity
+                    onPress={() => setMonth(shiftMonth(currentMonth, -1))}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                    <Feather name="chevron-left" size={20} color={textColor} />
+                </TouchableOpacity>
+
+                <Text style={{
+                    color: textColor,
+                    fontSize: 15,
+                    fontWeight: '600',
+                    textTransform: 'capitalize',
+                }}>
+                    {getMonthLabel(currentMonth)}
+                </Text>
+
+                <TouchableOpacity
+                    onPress={() => { if (!isAtMax) setMonth(shiftMonth(currentMonth, 1)); }}
+                    disabled={isAtMax}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ opacity: isAtMax ? 0.3 : 1 }}
+                >
+                    <Feather name="chevron-right" size={20} color={textColor} />
+                </TouchableOpacity>
+            </View>
 
             {/* Lista */}
             <View style={{ flex: 1 }}>
